@@ -682,10 +682,19 @@ function rerender(): void {
 }
 
 function renderFooter(): void {
+  const asset = activeAsset();
+  const canEdit = Boolean(asset?.ir && asset?.tactile && asset.status !== "error");
   const footer = document.getElementById("tw-footer");
-  if (footer) footer.style.display = activeAsset() ? "flex" : "none";
+  // Hide edit/export controls while live upload parsing is pending or has
+  // failed honestly. Otherwise an edit can route back through the fixture parser.
+  if (footer) footer.style.display = canEdit ? "flex" : "none";
   const status = document.getElementById("tw-edit-status");
   if (!status) return;
+  if (!canEdit) {
+    status.textContent = "";
+    status.removeAttribute("data-kind");
+    return;
+  }
 
   if (state.resolving) {
     status.setAttribute("data-kind", "resolving");
