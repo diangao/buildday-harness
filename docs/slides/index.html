@@ -616,7 +616,7 @@
 
                     <div class="title-hero">
                         <h1 class="reveal">Tactile<br>Diagram<br><em>Workbench.</em></h1>
-                        <p class="title-tagline reveal">Chemistry diagrams that a blind student can read with their fingers — one upload, faithful by default.</p>
+                        <p class="title-tagline reveal">Open-source braille compiler for blind STEM students — any diagram, any input, on the printer the school already has.</p>
                     </div>
 
                     <div class="title-masthead reveal" style="align-items:flex-end;">
@@ -630,30 +630,30 @@
             <section class="slide">
                 <div class="slide-pad">
                     <p class="eyebrow reveal">01 · The gap</p>
-                    <h2 class="section-headline reveal" style="margin-top:24px;">Braille text covers words.<br><em>Diagrams stay sighted.</em></h2>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">STEM diagrams<br><em>stay sighted.</em></h2>
 
                     <div class="problem-grid">
                         <div class="problem-card reveal">
                             <span class="index">Option A</span>
                             <h3>Order a tactile graphic from a service.</h3>
-                            <p>Turnaround measured in weeks. Per-diagram fee. Doesn't survive a curriculum revision.</p>
-                            <span class="tag">lead time: weeks</span>
+                            <p>Turnaround measured in weeks. Per-diagram fee. Doesn't survive a curriculum revision. Works for one printed-textbook chapter — not for a teacher's day-to-day.</p>
+                            <span class="tag">3 weeks · per-diagram fee</span>
                         </div>
                         <div class="problem-card reveal">
                             <span class="index">Option B</span>
                             <h3>Substitute a Unicode-braille font.</h3>
-                            <p>Letters render. Structure does not. Double bonds, rings, stereochemistry collapse into characters.</p>
+                            <p>Letters render. Structure does not. Double bonds, axes, force vectors, cell organelles, circuit nodes — all collapse into characters.</p>
                             <span class="tag">structure dropped</span>
                         </div>
                         <div class="problem-card reveal">
                             <span class="index">Option C</span>
                             <h3>Skip the diagram.</h3>
-                            <p>Caption the figure with a sentence. The student loses the diagram as a thing to think with.</p>
+                            <p>Caption the figure with a sentence. The student loses the diagram as a thing to think with — they don't get to do the chemistry, the physics, the biology.</p>
                             <span class="tag">information lost</span>
                         </div>
                     </div>
 
-                    <p class="quiet-line reveal">A teacher's edit on a chemistry diagram should be one upload, not a procurement workflow.</p>
+                    <p class="quiet-line reveal">Any STEM diagram — chemistry, biology, physics, circuit, math — should be one upload, not a procurement workflow.</p>
 
                     <div class="footer-bar">
                         <span>tactile-diagram-workbench</span>
@@ -672,21 +672,21 @@
                         <div class="loop-step reveal">
                             <span class="step-num">01 · upload</span>
                             <h3>Drop the source.</h3>
-                            <p>Photo, PDF, or textbook scan. Claude vision reads it, returns canonical SMILES.</p>
-                            <span class="demo-strip">image → SMILES</span>
+                            <p>Photo, hand-drawn sketch, PDF, textbook scan — or type "draw acetone". Claude vision reads it (or generates from concept), returns a structured IR per subject.</p>
+                            <span class="demo-strip">image / sketch / concept → IR</span>
                         </div>
                         <div class="loop-arrow reveal">→</div>
                         <div class="loop-step reveal">
                             <span class="step-num">02 · preview</span>
                             <h3>Render BANA tactile.</h3>
-                            <p>Real six-dot geometry. Raised lines for bonds, raised dots for atoms. Not a font, not a glyph.</p>
+                            <p>Real six-dot geometry — raised lines for bonds, axes, arrows, edges; raised dots for atom labels and braille text. Not a font, not a glyph.</p>
                             <span class="demo-strip">IR → tactile SVG</span>
                         </div>
                         <div class="loop-arrow reveal">→</div>
                         <div class="loop-step reveal">
                             <span class="step-num">03 · edit</span>
                             <h3>"Make labels bigger."</h3>
-                            <p>Natural language. The model picks a safe rendering op. The transform itself is deterministic.</p>
+                            <p>Natural language. "Move the oxygen label away from the bond." "Add a note: this is the reactive site." The model picks a safe rendering op; the transform applies deterministically.</p>
                             <span class="demo-strip">NL → EditOp</span>
                         </div>
                         <div class="loop-arrow reveal">→</div>
@@ -710,35 +710,29 @@
             <!-- ============ SLIDE 4 — MONEY-SHOT ============ -->
             <section class="slide">
                 <div class="slide-pad">
-                    <p class="eyebrow reveal">03 · The thing that broke us</p>
-                    <h2 class="section-headline reveal" style="margin-top:24px;">An edit can <em>silently lie.</em></h2>
+                    <p class="eyebrow reveal">03 · The shift</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">Three weeks.<br>Now, <em>before the bell rings.</em></h2>
 
                     <div class="moneyshot">
                         <div class="moneyshot-panel reveal">
-                            <span class="panel-eyebrow">Before</span>
-                            <h3>Acetic acid, faithful render.</h3>
-                            <div class="formula">CH<sub>3</sub>—C<strong>(=O)</strong>—OH</div>
-                            <p>The carbonyl C=O double bond is present. Verifier compares canonical SMILES to the rendered IR.</p>
-                            <div class="chip-row">
-                                <span class="chip ready"><span class="dot"></span>ready</span>
-                                <span class="chip-arrow">preflight chip</span>
+                            <span class="panel-eyebrow">Without us</span>
+                            <h3>The diagram is a procurement workflow.</h3>
+                            <p>Order a tactile sheet from a graphics service. Three-week turnaround. Per-diagram fee. Each curriculum update is another order. The blind student reads the diagram three weeks after their class did — or skips it.</p>
+                            <div class="chip-row" style="margin-top:auto;">
+                                <span class="chip review"><span class="dot"></span>3 weeks · ~$40 / diagram</span>
                             </div>
                         </div>
-                        <div class="moneyshot-panel bad reveal">
-                            <span class="panel-eyebrow">After — same diagram</span>
-                            <h3>"Make labels bigger" drops the double bond.</h3>
-                            <div class="cmd mono">› make labels bigger</div>
-                            <div class="formula">CH<sub>3</sub>—C<s><strong>=O</strong></s>—OH&nbsp;&nbsp;<span style="color:var(--rust);">→ C—O</span></div>
-                            <p>The depiction shifted. A blind student would learn a different molecule. A teacher would not see this.</p>
-                            <div class="chip-row">
-                                <span class="chip review"><span class="dot"></span>needs review</span>
-                                <span class="chip-arrow">→</span>
+                        <div class="moneyshot-panel reveal">
+                            <span class="panel-eyebrow">With the workbench</span>
+                            <h3>The diagram is part of the lesson plan.</h3>
+                            <p>The teacher photographs the textbook page, hand-draws on the board, or types "draw acetone". The workbench compiles. The school's swell-paper printer prints. The blind student reads the diagram during the same class as everyone else.</p>
+                            <div class="chip-row" style="margin-top:auto;">
+                                <span class="chip ready"><span class="dot"></span>seconds · school's existing printer</span>
                             </div>
-                            <div class="verify-line mono">verifier: C–O bond should be double · wrong_bond_order</div>
                         </div>
                     </div>
 
-                    <p class="quiet-line reveal">We verify against canonical SMILES every edit, before any print is sent.</p>
+                    <p class="quiet-line reveal">Chemistry is verified end-to-end today · biology, physics, math, circuits route to teacher-review drafts — clearly chip-labelled, never faked.</p>
 
                     <div class="footer-bar">
                         <span>tactile-diagram-workbench</span>
@@ -754,33 +748,33 @@
                     <h2 class="section-headline reveal" style="margin-top:24px;">Decoupled pipeline.<br><em>Mock first.</em>&nbsp;Real swap.&nbsp;Same contracts.</h2>
 
                     <div class="pipeline-row reveal">
-                        <div class="pipeline-step"><div class="step-mono">01</div><div class="step-name">ingest</div></div>
+                        <div class="pipeline-step highlight"><div class="step-mono">01</div><div class="step-name">ingest</div></div>
                         <div class="pipeline-step highlight"><div class="step-mono">02</div><div class="step-name">parse</div></div>
                         <div class="pipeline-step"><div class="step-mono">03</div><div class="step-name">compile</div></div>
-                        <div class="pipeline-step highlight"><div class="step-mono">04</div><div class="step-name">verify</div></div>
+                        <div class="pipeline-step"><div class="step-mono">04</div><div class="step-name">verify</div></div>
                         <div class="pipeline-step highlight"><div class="step-mono">05</div><div class="step-name">edit</div></div>
-                        <div class="pipeline-step"><div class="step-mono">06</div><div class="step-name">export</div></div>
+                        <div class="pipeline-step highlight"><div class="step-mono">06</div><div class="step-name">export</div></div>
                     </div>
 
                     <div class="arch-callouts">
                         <div class="callout reveal">
-                            <div class="callout-head">parse</div>
-                            <div class="callout-title">Claude vision, server-side.</div>
-                            <p>Image &rarr; canonical <code>SMILES</code>. The API key never reaches the browser — it lives only in the Vercel function env.</p>
+                            <div class="callout-head">three input modes</div>
+                            <div class="callout-title">Photo, sketch, or concept.</div>
+                            <p>Photo / scan / PDF goes through Claude vision; SVG sources skip the VLM via a fast text-extraction path; "draw acetone"-style concepts generate canonical structure server-side. All resolve to the same downstream IR.</p>
                         </div>
                         <div class="callout reveal">
-                            <div class="callout-head">verify</div>
-                            <div class="callout-title">rdkit-js, deterministic.</div>
-                            <p>Canonicalize source and rendered IR, structural diff, flag every dropped bond and missing atom. No model in the loop.</p>
+                            <div class="callout-head">subject router</div>
+                            <div class="callout-title">Verified or teacher-review draft.</div>
+                            <p>Chemistry runs through the rdkit-js verifier and prints with the verified chip. Biology, physics, circuits, math run through the universal tactile renderer and print with a teacher-review chip — the trust level shows on the surface, never blurred.</p>
                         </div>
                         <div class="callout reveal">
                             <div class="callout-head">edit</div>
                             <div class="callout-title">Model picks the op. Never the SVG.</div>
-                            <p>Natural language → one of six safe rendering ops. The transform is fully deterministic; the verifier runs again after every edit.</p>
+                            <p>Natural language → one of a small set of structure-safe rendering ops. The transform applies deterministically; the chip updates after every edit.</p>
                         </div>
                     </div>
 
-                    <p class="quiet-line reveal">The verifier is rdkit-js canonical SMILES, not another model.</p>
+                    <p class="quiet-line reveal">Shared contracts let every subject share the same edit, export, and chip surface — only the verifier swaps per vertical.</p>
 
                     <div class="footer-bar">
                         <span>tactile-diagram-workbench</span>
@@ -793,30 +787,29 @@
             <section class="slide">
                 <div class="slide-pad">
                     <p class="eyebrow reveal">05 · Built today</p>
-                    <h2 class="section-headline reveal" style="margin-top:24px;">What's real,<br><em>what's a stand-in.</em></h2>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">What's verified,<br><em>what's a teacher-review draft.</em></h2>
 
                     <div class="built-grid">
                         <div class="built-col real reveal">
-                            <h3>Shipped</h3>
-                            <div class="col-headline">Chemistry end-to-end is real.</div>
+                            <h3>Verified today</h3>
+                            <div class="col-headline">Chemistry, end-to-end.</div>
                             <ul>
-                                <li>Real BANA six-dot tactile geometry — not a Unicode font</li>
-                                <li>Deterministic verifier on rdkit-js canonical SMILES</li>
-                                <li>Natural-language edit with Claude resolver + regex fallback</li>
-                                <li>A4 print-sheet for swell paper carries the diagram lines + dots · <code>.brf</code> for text embossers carries the labels — both run on what schools already have</li>
-                                <li>Serverless VLM proxy, key locked server-side</li>
+                                <li>Three input modes live: photo upload, hand-drawn sketch, "draw acetone"-style concept generation</li>
+                                <li>Claude Opus 4.8 vision in prod, key locked server-side</li>
+                                <li>Real BANA six-dot tactile geometry, raised bond lines on the print sheet</li>
+                                <li>Natural-language edit with Claude resolver + regex fallback for offline</li>
+                                <li>A4 print-sheet for swell paper carries the diagram lines · <code>.brf</code> for text embossers carries the labels</li>
                                 <li>Public Vercel URL · QA-able on any device</li>
                             </ul>
                         </div>
                         <div class="built-col honest reveal">
-                            <h3>Honest scope</h3>
-                            <div class="col-headline">What we are not pretending.</div>
+                            <h3>Draft lanes</h3>
+                            <div class="col-headline">Other STEM, honest about the trust level.</div>
                             <ul>
-                                <li>Chemistry is the only subject translated end-to-end today — biology / physics / math surface as the original image, multi-subject router in flight</li>
-                                <li>NL edit limited to a small structure-safe op set, not arbitrary structural change</li>
-                                <li>No physical embosser or swell-paper heater on stage — we ship the files</li>
-                                <li>Text-only braille embossers don't print the diagram lines, only the labels (the SVG / PDF print sheet does the lines)</li>
-                                <li>The verifier announces its own ignorance instead of guessing</li>
+                                <li>Biology / physics / math / circuits route through a universal tactile renderer — labels translated, lines redrawn raised — but surface as <em>teacher-review drafts</em></li>
+                                <li>A distinct chip (different from chemistry's verified chip) makes the trust level visible on the workbench surface; a draft is never confused for a verified output</li>
+                                <li>Per-subject verifiers ship over time. Until each one lands, the chip says so</li>
+                                <li>The pipeline announces its own uncertainty instead of guessing</li>
                             </ul>
                         </div>
                     </div>
@@ -855,7 +848,7 @@
                     </div>
 
                     <div>
-                        <p class="close-claim reveal">Tactile chemistry,<br>one upload,<br>faithful by default.</p>
+                        <p class="close-claim reveal">All of STEM,<br>before the lesson<br><em>starts.</em></p>
                         <div class="footer-bar" style="bottom:32px;">
                             <span>github.com/diangao/buildday-harness</span>
                             <span class="right">tactile-diagram-workbench · build day 2026</span>

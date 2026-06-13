@@ -1,43 +1,37 @@
 # Tactile Diagram Workbench
 
-## Image → canonical SMILES via Claude vision (Opus 4.8), serverless, API key never reaches the browser.
+**Open-source braille compiler for blind STEM students.**
 
-## Real BANA six-dot tactile geometry rendered from rdkit-js IR — raised dots, raised bond lines, not a Unicode font.
+## Blind STEM students get the diagram in the time it takes their teacher to upload it — not the three weeks tactile-graphics services take.
 
-## Deterministic verifier on canonical SMILES catches the silent `C=O → C–O` drop before any print is sent.
+## Any STEM image: a chemistry structure, a neuron, a free-body diagram, a circuit, a labeled graph. Upload it, and the workbench compiles it to a tactile-ready sheet.
 
-## Natural-language edit through a six-op safe router; the model picks the op, never touches the SVG.
+## Three input modes: a photo of the textbook page, a hand-drawn sketch on the whiteboard, or a one-line description like "draw acetone" or "label the parts of a neuron."
 
-## A4 SVG / PDF for swell paper (or a tactile-graphics embosser) carries the diagram lines · `.brf` for a text-only braille embosser carries the labels — runs on the kit schools already have.
+## Edit in plain English — "make labels bigger", "thicken the lines", "add a note: this is the reactive site" — instead of CAD, LaTeX, or a sighted assistant.
 
-<!-- HERO: insert tactile output of acetic-acid alongside the preflight-flip moment -->
+## Prints on what schools already have: swell paper + a ~$1.5k PIAF heater for the raised diagram lines, or a text-only Index V5 for the `.brf` braille labels. No specialty hardware required.
+
+<!-- HERO: insert tactile output of acetic-acid alongside the workbench surface -->
 
 ---
 
-A chemistry teacher uploads a textbook diagram. The workbench parses it, renders an A4 SVG / PDF print sheet that carries the diagram's raised lines and dots together (the form a swell-paper heater or a tactile-graphics embosser actually prints) and a `.brf` that carries the braille text labels for a text-only braille embosser. The teacher refines the result in plain English. After every edit, a deterministic verifier canonicalises the source structure against the rendered structure and flags the moment they diverge — the case the project exists for is when "make labels bigger" silently drops a `C=O` bond to a single bond, which a sighted teacher cannot see but a blind student would learn from.
+A teacher uploads a STEM diagram from any subject. The workbench compiles it into a tactile-ready sheet — raised lines and dots together on an A4 SVG / PDF (the form a swell-paper heater or a tactile-graphics embosser prints) and a `.brf` for the braille labels on a text-only embosser. The teacher refines the result in plain English, edits the labels, repositions notation, adds annotations. The trust level shows on the workbench chip: verified for chemistry, teacher-review draft for other subjects until each verifier lands.
 
 **Live URL:** [buildday-harness.vercel.app](https://buildday-harness.vercel.app)
 **Repo:** [github.com/diangao/buildday-harness](https://github.com/diangao/buildday-harness)
 
 ---
 
-## The case we exist to catch
-
-Load **Acetic acid**. Preflight chip reads `● ready`. Type `make labels bigger`. The depiction shifts. The verifier flips the chip:
-
-```
-verifier: C–O bond should be double · wrong_bond_order
-```
-
-A sighted teacher would not catch the drop. A blind student would learn the wrong molecule. The workbench catches it before the print is sent.
-
 ## What's real, what isn't
 
-**Chemistry** is the only subject the workbench translates end-to-end today. The pipeline parses the source image into canonical SMILES, compiles it into a tactile sheet with raised bond lines and braille atom labels, and verifies it against rdkit-js canonicalisation on every edit. Biology, physics, and math uploads currently surface as the original image with no tactile translation — a multi-subject router and per-subject draft lanes are in flight to land them as honest drafts that say so on the chip, not as faked tactile output.
+The product is **any STEM subject** — chemistry, biology, physics, math, circuits. The chemistry pipeline is the verified vertical today: image / hand-drawn sketch / concept-description → canonical SMILES (Claude Opus 4.8 vision) → rdkit-js IR → tactile SVG + `.brf` labels, with a deterministic verifier that canonicalises the source and the rendered structure and surfaces any divergence on every edit. The case the verifier exists for is when a depiction edit silently drops a `C=O` bond to a single bond — a sighted teacher cannot see this, but a blind student would learn from it.
 
-Natural-language edit is bounded to a small set of **structure-safe rendering ops**; there is no affordance to rewrite the molecule itself, because that affordance is exactly the failure mode the verifier exists to prevent.
+For non-chemistry STEM uploads, the workbench routes the image through a universal tactile renderer (text labels translated to braille, bond / axis / arrow / shape lines redrawn as raised tactile line work) and surfaces the output as a **teacher-review draft** with a distinct chip — clearly different from the verified chemistry path, never a faked tactile sheet. Per-subject verifiers (a physics free-body diagram has different correctness rules from a biology cell labeling) ship over time; until they do, the chip says so.
 
-The diagram's raised lines need a swell-paper heater (the cheap path schools already have) or a tactile-graphics embosser to come out as continuous raised line work — a text-only braille embosser only puts down the `.brf` labels, not the diagram itself. There is **no physical hardware on stage**, so we ship both files. When the verifier doesn't know, it says it doesn't know.
+Natural-language edit is bounded to a small set of structure-safe rendering ops; there is no affordance to rewrite the underlying structure (that would invite the silent-drift failure mode the chemistry verifier exists to catch).
+
+The diagram's raised lines need a swell-paper heater (the cheap path schools already have) or a tactile-graphics embosser to come out as continuous raised line work — a text-only braille embosser only puts down the `.brf` labels, not the diagram itself. There is no physical hardware on stage during the demo, so we ship both files.
 
 ## Try it
 
