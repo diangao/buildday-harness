@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactile Diagram Workbench — Build Day</title>
+
+    <link rel="preconnect" href="https://api.fontshare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=sentient@400,500,700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+    <style>
+        /* ===========================================
+           THEME — tactile letterpress
+           Warm cream paper, off-black ink, moss + rust accents,
+           subtle braille-cell dot grid as background motif.
+           =========================================== */
+        :root {
+            --paper:          #f3ecdb;
+            --paper-warm:     #faf5e7;
+            --rule:           #d9cfae;
+            --ink:            #1a1a1a;
+            --ink-mute:       #8c7e62;
+            --moss:           #3d6c4e;
+            --rust:           #b8500e;
+            --rust-soft:      #c97a3a;
+
+            --stage-bg:       var(--paper);
+            --slide-bg:       var(--paper-warm);
+
+            --font-display:   'Sentient', 'Times New Roman', serif;
+            --font-body:      'Atkinson Hyperlegible', system-ui, sans-serif;
+            --font-mono:      'JetBrains Mono', ui-monospace, monospace;
+
+            --pad:            96px;
+
+            --ease-out:       cubic-bezier(0.16, 1, 0.3, 1);
+            --t-slow:         900ms;
+            --t-med:          600ms;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* === MANDATORY: viewport-base.css === */
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--stage-bg, #000); }
+        .deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg, #000); }
+        .deck-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: var(--slide-bg, #fff); }
+        .slide { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: hidden; opacity: 0; pointer-events: none; background: var(--slide-bg, #fff); }
+        .slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
+        img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+        .deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+        }
+
+        /* ===========================================
+           BACKGROUND MOTIF — subtle braille dot grid
+           Each "cell" pattern = 2 cols × 3 rows of dots,
+           barely visible against the cream paper.
+           =========================================== */
+        .slide {
+            background-color: var(--paper-warm);
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(140, 126, 98, 0.13) 1.4px, transparent 1.8px);
+            background-size: 40px 40px;
+            background-position: 0 0;
+        }
+
+        /* ===========================================
+           TYPOGRAPHY
+           =========================================== */
+        body { font-family: var(--font-body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+        .display { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; line-height: 0.96; }
+        .mono { font-family: var(--font-mono); font-feature-settings: 'tnum'; letter-spacing: 0; }
+
+        /* ===========================================
+           SHARED SLIDE FURNITURE
+           =========================================== */
+        .slide-pad { padding: var(--pad); height: 100%; display: flex; flex-direction: column; position: relative; }
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--ink-mute);
+        }
+        .footer-bar {
+            position: absolute;
+            left: var(--pad);
+            right: var(--pad);
+            bottom: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-family: var(--font-mono);
+            font-size: 16px;
+            color: var(--ink-mute);
+            border-top: 1px solid var(--rule);
+            padding-top: 18px;
+            letter-spacing: 0.04em;
+        }
+        .footer-bar .right { text-align: right; }
+
+        /* ===========================================
+           REVEAL ANIMATIONS
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity var(--t-slow) var(--ease-out),
+                        transform var(--t-slow) var(--ease-out);
+        }
+        .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 80ms; }
+        .reveal:nth-child(2) { transition-delay: 200ms; }
+        .reveal:nth-child(3) { transition-delay: 320ms; }
+        .reveal:nth-child(4) { transition-delay: 440ms; }
+        .reveal:nth-child(5) { transition-delay: 560ms; }
+        .reveal:nth-child(6) { transition-delay: 680ms; }
+
+        /* ===========================================
+           SLIDE 1 — TITLE
+           =========================================== */
+        .title-slide .slide-pad { justify-content: space-between; }
+        .title-masthead {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-family: var(--font-mono);
+            color: var(--ink-mute);
+            font-size: 18px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+        .braille-cell-large {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 180px;
+            line-height: 1;
+            color: var(--ink);
+            letter-spacing: -0.04em;
+        }
+        .title-hero { display: flex; flex-direction: column; gap: 36px; max-width: 1500px; }
+        .title-hero h1 { font-family: var(--font-display); font-size: 200px; line-height: 0.92; font-weight: 500; letter-spacing: -0.028em; color: var(--ink); }
+        .title-hero h1 em { font-style: italic; font-weight: 400; color: var(--ink); }
+        .title-tagline {
+            font-family: var(--font-body);
+            font-size: 42px;
+            line-height: 1.3;
+            color: var(--ink-mute);
+            font-weight: 400;
+            font-style: italic;
+            max-width: 1300px;
+        }
+
+        /* ===========================================
+           SLIDE 2 — PROBLEM
+           =========================================== */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 36px;
+            margin-top: 80px;
+        }
+        .problem-card {
+            background: var(--paper);
+            border: 1px solid var(--rule);
+            padding: 44px 40px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            min-height: 460px;
+            position: relative;
+        }
+        .problem-card .index {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            color: var(--ink-mute);
+            letter-spacing: 0.18em;
+        }
+        .problem-card h3 {
+            font-family: var(--font-display);
+            font-size: 44px;
+            line-height: 1.05;
+            font-weight: 500;
+            color: var(--ink);
+        }
+        .problem-card p {
+            font-size: 24px;
+            line-height: 1.45;
+            color: var(--ink);
+        }
+        .problem-card .tag {
+            margin-top: auto;
+            font-family: var(--font-mono);
+            font-size: 18px;
+            color: var(--rust);
+            letter-spacing: 0.04em;
+        }
+
+        h2.section-headline {
+            font-family: var(--font-display);
+            font-size: 96px;
+            line-height: 0.98;
+            font-weight: 500;
+            letter-spacing: -0.018em;
+            max-width: 1500px;
+        }
+        h2.section-headline em { font-style: italic; }
+
+        .quiet-line {
+            font-family: var(--font-body);
+            font-style: italic;
+            font-size: 26px;
+            color: var(--ink-mute);
+            margin-top: 36px;
+            max-width: 1400px;
+        }
+
+        /* ===========================================
+           SLIDE 3 — THE LOOP
+           =========================================== */
+        .loop-row {
+            display: grid;
+            grid-template-columns: 1fr 32px 1fr 32px 1fr 32px 1fr;
+            align-items: stretch;
+            gap: 0;
+            margin-top: 84px;
+        }
+        .loop-step {
+            background: var(--paper);
+            border: 1px solid var(--rule);
+            padding: 36px 32px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-height: 360px;
+        }
+        .loop-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink-mute);
+            font-family: var(--font-mono);
+            font-size: 32px;
+        }
+        .loop-step .step-num {
+            font-family: var(--font-mono);
+            color: var(--ink-mute);
+            font-size: 14px;
+            letter-spacing: 0.2em;
+        }
+        .loop-step h3 {
+            font-family: var(--font-display);
+            font-size: 40px;
+            font-weight: 500;
+            line-height: 1.05;
+            color: var(--ink);
+        }
+        .loop-step p {
+            font-size: 21px;
+            line-height: 1.4;
+            color: var(--ink);
+        }
+        .loop-step .demo-strip {
+            margin-top: auto;
+            border-top: 1px dashed var(--rule);
+            padding-top: 14px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--ink-mute);
+            letter-spacing: 0.04em;
+        }
+
+        /* ===========================================
+           SLIDE 4 — MONEY-SHOT
+           =========================================== */
+        .moneyshot {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 64px;
+            margin-top: 64px;
+            flex: 1;
+            align-items: stretch;
+        }
+        .moneyshot-panel {
+            background: var(--paper);
+            border: 1px solid var(--rule);
+            padding: 40px 44px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            position: relative;
+        }
+        .moneyshot-panel .panel-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--ink-mute);
+        }
+        .moneyshot-panel h3 {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 500;
+            line-height: 1.04;
+        }
+        .moneyshot-panel .cmd {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            background: var(--paper-warm);
+            padding: 18px 22px;
+            border-left: 3px solid var(--ink);
+            color: var(--ink);
+        }
+        .moneyshot-panel .formula {
+            font-family: var(--font-mono);
+            font-size: 32px;
+            color: var(--ink);
+            letter-spacing: 0.02em;
+        }
+        .moneyshot-panel .formula strong { color: var(--rust); font-weight: 500; }
+        .moneyshot-panel .formula s { text-decoration: line-through; text-decoration-color: var(--rust); }
+        .moneyshot-panel p { font-size: 21px; line-height: 1.5; color: var(--ink); }
+        .moneyshot-panel.bad { border-color: var(--rust); }
+
+        .chip-row {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-size: 18px;
+            padding: 8px 16px;
+            background: transparent;
+            border-radius: 999px;
+        }
+        .chip .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .chip.ready { border: 1.5px solid var(--moss); color: var(--moss); }
+        .chip.ready .dot { background: var(--moss); }
+        .chip.review { border: 1.5px solid var(--rust); color: var(--rust); }
+        .chip.review .dot { background: var(--rust); }
+        .chip-arrow { color: var(--ink-mute); font-family: var(--font-mono); }
+
+        .verify-line {
+            font-family: var(--font-mono);
+            font-size: 16px;
+            color: var(--rust);
+            margin-top: 6px;
+        }
+
+        /* ===========================================
+           SLIDE 5 — ARCHITECTURE
+           =========================================== */
+        .pipeline-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0;
+            margin-top: 80px;
+            border-top: 1px solid var(--rule);
+            border-bottom: 1px solid var(--rule);
+        }
+        .pipeline-step {
+            padding: 32px 24px;
+            text-align: center;
+            border-right: 1px solid var(--rule);
+            position: relative;
+        }
+        .pipeline-step:last-child { border-right: none; }
+        .pipeline-step .step-mono {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--ink-mute);
+            letter-spacing: 0.2em;
+            margin-bottom: 8px;
+        }
+        .pipeline-step .step-name {
+            font-family: var(--font-display);
+            font-size: 38px;
+            font-weight: 500;
+            color: var(--ink);
+        }
+        .pipeline-step.highlight .step-name { color: var(--rust); }
+        .pipeline-step.highlight::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -1px;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 3px;
+            background: var(--rust);
+        }
+
+        .arch-callouts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 48px;
+        }
+        .callout {
+            border-left: 3px solid var(--ink);
+            padding-left: 24px;
+        }
+        .callout .callout-head {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            margin-bottom: 10px;
+        }
+        .callout .callout-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            line-height: 1.1;
+            margin-bottom: 12px;
+        }
+        .callout p { font-size: 20px; line-height: 1.45; color: var(--ink); }
+        .callout code {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            background: var(--paper);
+            padding: 2px 8px;
+            border: 1px solid var(--rule);
+        }
+
+        /* ===========================================
+           SLIDE 6 — BUILT TODAY
+           =========================================== */
+        .built-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 56px;
+            margin-top: 56px;
+            flex: 1;
+        }
+        .built-col {
+            background: var(--paper);
+            border: 1px solid var(--rule);
+            padding: 44px 44px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .built-col.real { border-top: 4px solid var(--moss); }
+        .built-col.honest { border-top: 4px solid var(--ink-mute); }
+        .built-col h3 {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+        }
+        .built-col .col-headline {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: 500;
+            line-height: 1.04;
+            color: var(--ink);
+        }
+        .built-col ul { list-style: none; display: flex; flex-direction: column; gap: 18px; margin-top: 8px; }
+        .built-col li {
+            font-size: 22px;
+            line-height: 1.4;
+            padding-left: 28px;
+            position: relative;
+        }
+        .built-col.real li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 12px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--moss);
+        }
+        .built-col.honest li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 14px;
+            width: 14px;
+            height: 2px;
+            background: var(--ink-mute);
+        }
+        .built-col code {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            background: var(--paper-warm);
+            padding: 2px 8px;
+            border: 1px solid var(--rule);
+        }
+
+        /* ===========================================
+           SLIDE 7 — TEAM + CLOSE
+           =========================================== */
+        .close-slide .slide-pad { justify-content: space-between; }
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px 56px;
+            margin-top: 56px;
+            margin-bottom: 32px;
+        }
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--rule);
+            padding: 18px 0;
+            align-items: baseline;
+        }
+        .team-row .name {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 500;
+            color: var(--ink);
+        }
+        .team-row .lane {
+            font-family: var(--font-mono);
+            font-size: 17px;
+            color: var(--ink-mute);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+        .close-claim {
+            font-family: var(--font-display);
+            font-size: 80px;
+            line-height: 1.02;
+            font-weight: 500;
+            letter-spacing: -0.018em;
+            font-style: italic;
+            color: var(--ink);
+            max-width: 1500px;
+        }
+
+        /* ===========================================
+           DECK CONTROLS
+           =========================================== */
+        .deck-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--paper-warm);
+            border: 1px solid var(--rule);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--ink-mute);
+            letter-spacing: 0.12em;
+            box-shadow: 0 4px 12px rgba(26, 26, 26, 0.06);
+        }
+        .deck-controls button {
+            background: transparent;
+            border: none;
+            color: var(--ink);
+            font-family: var(--font-mono);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 8px;
+            line-height: 1;
+        }
+        .deck-controls button:hover { color: var(--rust); }
+        .deck-controls .counter { color: var(--ink); letter-spacing: 0.16em; }
+
+        /* ===========================================
+           EDIT TOGGLE
+           =========================================== */
+        .edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+        .edit-toggle {
+            position: fixed; top: 18px; left: 18px;
+            width: 44px; height: 44px;
+            background: var(--paper-warm);
+            border: 1px solid var(--rule);
+            color: var(--ink);
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10001;
+            border-radius: 50%;
+        }
+        .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+        .edit-toggle.active { background: var(--rust); color: var(--paper-warm); border-color: var(--rust); }
+        [contenteditable="true"] { outline: 1px dashed var(--rust); outline-offset: 4px; cursor: text; }
+    </style>
+</head>
+<body>
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ============ SLIDE 1 — TITLE ============ -->
+            <section class="slide title-slide active visible">
+                <div class="slide-pad">
+                    <div class="title-masthead reveal">
+                        <span>Build&nbsp;Day&nbsp;·&nbsp;2026-06-13</span>
+                        <span>github.com/diangao/buildday-harness</span>
+                    </div>
+
+                    <div class="title-hero">
+                        <h1 class="reveal">Tactile<br>Diagram<br><em>Workbench.</em></h1>
+                        <p class="title-tagline reveal">Open-source braille compiler for blind STEM students — any diagram, any input, on the printer the school already has.</p>
+                    </div>
+
+                    <div class="title-masthead reveal" style="align-items:flex-end;">
+                        <span>⠞⠁⠉⠞⠊⠇⠑ &nbsp;·&nbsp; SVG&nbsp;→&nbsp;.brf</span>
+                        <span>diangao · ryo · mythos · fable · jett · dozy · john · cindy</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 2 — PROBLEM ============ -->
+            <section class="slide">
+                <div class="slide-pad">
+                    <p class="eyebrow reveal">01 · The gap</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">STEM diagrams<br><em>stay sighted.</em></h2>
+
+                    <div class="problem-grid">
+                        <div class="problem-card reveal">
+                            <span class="index">Option A</span>
+                            <h3>Order a tactile graphic from a service.</h3>
+                            <p>Turnaround measured in weeks. Per-diagram fee. Doesn't survive a curriculum revision. Works for one printed-textbook chapter — not for a teacher's day-to-day.</p>
+                            <span class="tag">3 weeks · per-diagram fee</span>
+                        </div>
+                        <div class="problem-card reveal">
+                            <span class="index">Option B</span>
+                            <h3>Substitute a Unicode-braille font.</h3>
+                            <p>Letters render. Structure does not. Double bonds, axes, force vectors, cell organelles, circuit nodes — all collapse into characters.</p>
+                            <span class="tag">structure dropped</span>
+                        </div>
+                        <div class="problem-card reveal">
+                            <span class="index">Option C</span>
+                            <h3>Skip the diagram.</h3>
+                            <p>Caption the figure with a sentence. The student loses the diagram as a thing to think with — they don't get to do the chemistry, the physics, the biology.</p>
+                            <span class="tag">information lost</span>
+                        </div>
+                    </div>
+
+                    <p class="quiet-line reveal">Any STEM diagram — chemistry, biology, physics, circuit, math — should be one upload, not a procurement workflow.</p>
+
+                    <div class="footer-bar">
+                        <span>tactile-diagram-workbench</span>
+                        <span class="right">slide 02 / 07</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 3 — THE LOOP ============ -->
+            <section class="slide">
+                <div class="slide-pad">
+                    <p class="eyebrow reveal">02 · The loop, one breath</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">Upload.<br>Preview.&nbsp;Edit.&nbsp;<em>Print.</em></h2>
+
+                    <div class="loop-row">
+                        <div class="loop-step reveal">
+                            <span class="step-num">01 · upload</span>
+                            <h3>Drop the source.</h3>
+                            <p>Photo, hand-drawn sketch, PDF, textbook scan — or type "draw acetone". Claude vision reads it (or generates from concept), returns a structured IR per subject.</p>
+                            <span class="demo-strip">image / sketch / concept → IR</span>
+                        </div>
+                        <div class="loop-arrow reveal">→</div>
+                        <div class="loop-step reveal">
+                            <span class="step-num">02 · preview</span>
+                            <h3>Render BANA tactile.</h3>
+                            <p>Real six-dot geometry — raised lines for bonds, axes, arrows, edges; raised dots for atom labels and braille text. Not a font, not a glyph.</p>
+                            <span class="demo-strip">IR → tactile SVG</span>
+                        </div>
+                        <div class="loop-arrow reveal">→</div>
+                        <div class="loop-step reveal">
+                            <span class="step-num">03 · edit</span>
+                            <h3>"Make labels bigger."</h3>
+                            <p>Natural language. "Move the oxygen label away from the bond." "Add a note: this is the reactive site." The model picks a safe rendering op; the transform applies deterministically.</p>
+                            <span class="demo-strip">NL → EditOp</span>
+                        </div>
+                        <div class="loop-arrow reveal">→</div>
+                        <div class="loop-step reveal">
+                            <span class="step-num">04 · print</span>
+                            <h3>Print on what schools already have.</h3>
+                            <p>A4 print-sheet → laser + swell paper (PIAF) for the raised lines + dots of the diagram. <code class="mono">.brf</code> → standard text embosser (Index V5), but only for the braille labels — text embossers don't put down lines.</p>
+                            <span class="demo-strip">SVG · swell paper · BRF labels</span>
+                        </div>
+                    </div>
+
+                    <p class="quiet-line reveal">The same surface a sighted teacher uses to mark up a textbook page.</p>
+
+                    <div class="footer-bar">
+                        <span>tactile-diagram-workbench</span>
+                        <span class="right">slide 03 / 07</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 4 — MONEY-SHOT ============ -->
+            <section class="slide">
+                <div class="slide-pad">
+                    <p class="eyebrow reveal">03 · The shift</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">Three weeks.<br>Now, <em>before the bell rings.</em></h2>
+
+                    <div class="moneyshot">
+                        <div class="moneyshot-panel reveal">
+                            <span class="panel-eyebrow">Without us</span>
+                            <h3>The diagram is a procurement workflow.</h3>
+                            <p>Order a tactile sheet from a graphics service. Three-week turnaround. Per-diagram fee. Each curriculum update is another order. The blind student reads the diagram three weeks after their class did — or skips it.</p>
+                            <div class="chip-row" style="margin-top:auto;">
+                                <span class="chip review"><span class="dot"></span>3 weeks · ~$40 / diagram</span>
+                            </div>
+                        </div>
+                        <div class="moneyshot-panel reveal">
+                            <span class="panel-eyebrow">With the workbench</span>
+                            <h3>The diagram is part of the lesson plan.</h3>
+                            <p>The teacher photographs the textbook page, hand-draws on the board, or types "draw acetone". The workbench compiles. The school's swell-paper printer prints. The blind student reads the diagram during the same class as everyone else.</p>
+                            <div class="chip-row" style="margin-top:auto;">
+                                <span class="chip ready"><span class="dot"></span>seconds · school's existing printer</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="quiet-line reveal">Chemistry is verified end-to-end today · biology, physics, math, circuits route to teacher-review drafts — clearly chip-labelled, never faked.</p>
+
+                    <div class="footer-bar">
+                        <span>tactile-diagram-workbench</span>
+                        <span class="right">slide 04 / 07</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 5 — ARCHITECTURE ============ -->
+            <section class="slide">
+                <div class="slide-pad">
+                    <p class="eyebrow reveal">04 · How it works</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">Decoupled pipeline.<br><em>Mock first.</em>&nbsp;Real swap.&nbsp;Same contracts.</h2>
+
+                    <div class="pipeline-row reveal">
+                        <div class="pipeline-step highlight"><div class="step-mono">01</div><div class="step-name">ingest</div></div>
+                        <div class="pipeline-step highlight"><div class="step-mono">02</div><div class="step-name">parse</div></div>
+                        <div class="pipeline-step"><div class="step-mono">03</div><div class="step-name">compile</div></div>
+                        <div class="pipeline-step"><div class="step-mono">04</div><div class="step-name">verify</div></div>
+                        <div class="pipeline-step highlight"><div class="step-mono">05</div><div class="step-name">edit</div></div>
+                        <div class="pipeline-step highlight"><div class="step-mono">06</div><div class="step-name">export</div></div>
+                    </div>
+
+                    <div class="arch-callouts">
+                        <div class="callout reveal">
+                            <div class="callout-head">three input modes</div>
+                            <div class="callout-title">Photo, sketch, or concept.</div>
+                            <p>Photo / scan / PDF goes through Claude vision; SVG sources skip the VLM via a fast text-extraction path; "draw acetone"-style concepts generate canonical structure server-side. All resolve to the same downstream IR.</p>
+                        </div>
+                        <div class="callout reveal">
+                            <div class="callout-head">subject router</div>
+                            <div class="callout-title">Verified or teacher-review draft.</div>
+                            <p>Chemistry runs through the rdkit-js verifier and prints with the verified chip. Biology, physics, circuits, math run through the universal tactile renderer and print with a teacher-review chip — the trust level shows on the surface, never blurred.</p>
+                        </div>
+                        <div class="callout reveal">
+                            <div class="callout-head">edit</div>
+                            <div class="callout-title">Model picks the op. Never the SVG.</div>
+                            <p>Natural language → one of a small set of structure-safe rendering ops. The transform applies deterministically; the chip updates after every edit.</p>
+                        </div>
+                    </div>
+
+                    <p class="quiet-line reveal">Shared contracts let every subject share the same edit, export, and chip surface — only the verifier swaps per vertical.</p>
+
+                    <div class="footer-bar">
+                        <span>tactile-diagram-workbench</span>
+                        <span class="right">slide 05 / 07</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 6 — BUILT TODAY ============ -->
+            <section class="slide">
+                <div class="slide-pad">
+                    <p class="eyebrow reveal">05 · Built today</p>
+                    <h2 class="section-headline reveal" style="margin-top:24px;">What's verified,<br><em>what's a teacher-review draft.</em></h2>
+
+                    <div class="built-grid">
+                        <div class="built-col real reveal">
+                            <h3>Verified today</h3>
+                            <div class="col-headline">Chemistry, end-to-end.</div>
+                            <ul>
+                                <li>Three input modes live: photo upload, hand-drawn sketch, "draw acetone"-style concept generation</li>
+                                <li>Claude Opus 4.8 vision in prod, key locked server-side</li>
+                                <li>Real BANA six-dot tactile geometry, raised bond lines on the print sheet</li>
+                                <li>Natural-language edit with Claude resolver + regex fallback for offline</li>
+                                <li>A4 print-sheet for swell paper carries the diagram lines · <code>.brf</code> for text embossers carries the labels</li>
+                                <li>Public Vercel URL · QA-able on any device</li>
+                            </ul>
+                        </div>
+                        <div class="built-col honest reveal">
+                            <h3>Draft lanes</h3>
+                            <div class="col-headline">Other STEM, honest about the trust level.</div>
+                            <ul>
+                                <li>Biology / physics / math / circuits route through a universal tactile renderer — labels translated, lines redrawn raised — but surface as <em>teacher-review drafts</em></li>
+                                <li>A distinct chip (different from chemistry's verified chip) makes the trust level visible on the workbench surface; a draft is never confused for a verified output</li>
+                                <li>Per-subject verifiers ship over time. Until each one lands, the chip says so</li>
+                                <li>The pipeline announces its own uncertainty instead of guessing</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="footer-bar">
+                        <span>tactile-diagram-workbench</span>
+                        <span class="right">slide 06 / 07</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ SLIDE 7 — TEAM + CLOSE ============ -->
+            <section class="slide close-slide">
+                <div class="slide-pad">
+                    <div>
+                        <p class="eyebrow reveal">06 · Built by</p>
+                        <h2 class="section-headline reveal" style="margin-top:24px;">A team of agents,<br>one human <em>operator.</em></h2>
+
+                        <div class="team-grid reveal">
+                            <div>
+                                <div class="team-row"><span class="name">Diyan</span><span class="lane">operator</span></div>
+                                <div class="team-row"><span class="name">Ryo</span><span class="lane">ui · .brf · deploy</span></div>
+                                <div class="team-row"><span class="name">mythos</span><span class="lane">parse · harness</span></div>
+                            </div>
+                            <div>
+                                <div class="team-row"><span class="name">fable</span><span class="lane">nl edit</span></div>
+                                <div class="team-row"><span class="name">jett</span><span class="lane">verifier · fixtures</span></div>
+                                <div class="team-row"><span class="name">dozy</span><span class="lane">gate · qa</span></div>
+                            </div>
+                            <div>
+                                <div class="team-row"><span class="name">john</span><span class="lane">research</span></div>
+                                <div class="team-row"><span class="name">John-mac-mini</span><span class="lane">scout · qa</span></div>
+                                <div class="team-row"><span class="name">Cindy</span><span class="lane">direction · this deck</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="close-claim reveal">All of STEM,<br>before the lesson<br><em>starts.</em></p>
+                        <div class="footer-bar" style="bottom:32px;">
+                            <span>github.com/diangao/buildday-harness</span>
+                            <span class="right">tactile-diagram-workbench · build day 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Deck controls (outside stage) -->
+        <div class="deck-controls">
+            <button id="prevBtn" title="Previous (←)">‹</button>
+            <span class="counter" id="counter">01 / 07</span>
+            <button id="nextBtn" title="Next (→)">›</button>
+        </div>
+
+        <!-- Edit toggle (outside stage) -->
+        <div class="edit-hotzone" id="editHotzone"></div>
+        <button class="edit-toggle" id="editToggle" title="Edit mode (E)">✎</button>
+    </div>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           =========================================== */
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.counter = document.getElementById('counter');
+                this.setupStageScale();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupButtonNav();
+                this.showSlide(0);
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
+                    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+                        e.preventDefault();
+                        this.next();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        e.preventDefault();
+                        this.prev();
+                    } else if (e.key === 'Home') {
+                        this.showSlide(0);
+                    } else if (e.key === 'End') {
+                        this.showSlide(this.slides.length - 1);
+                    }
+                });
+            }
+
+            setupTouchNav() {
+                let touchStartX = 0;
+                document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+                document.addEventListener('touchend', (e) => {
+                    const dx = e.changedTouches[0].screenX - touchStartX;
+                    if (Math.abs(dx) < 40) return;
+                    if (dx < 0) this.next(); else this.prev();
+                }, { passive: true });
+            }
+
+            setupButtonNav() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prev());
+                document.getElementById('nextBtn').addEventListener('click', () => this.next());
+            }
+
+            next() { this.showSlide(this.currentSlide + 1); }
+            prev() { this.showSlide(this.currentSlide - 1); }
+
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+                this.slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === this.currentSlide);
+                    slide.classList.toggle('visible', i === this.currentSlide);
+                });
+                const n = String(this.currentSlide + 1).padStart(2, '0');
+                const total = String(this.slides.length).padStart(2, '0');
+                this.counter.textContent = `${n} / ${total}`;
+            }
+        }
+
+        /* ===========================================
+           INLINE EDIT MODE
+           =========================================== */
+        class InlineEditor {
+            constructor() {
+                this.isActive = false;
+                this.toggle = document.getElementById('editToggle');
+                this.editableSelectors = 'h1, h2, h3, p, .formula, .cmd, .verify-line, li, .name, .lane, .col-headline, .panel-eyebrow, .callout-title, .callout p, .step-name, .step-mono, .loop-step h3, .loop-step p, .step-num, .demo-strip';
+                this.toggle.addEventListener('click', () => this.toggleEditMode());
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable') && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        this.toggleEditMode();
+                    }
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's' && this.isActive) {
+                        e.preventDefault();
+                        this.persist();
+                    }
+                });
+                this.restore();
+            }
+
+            toggleEditMode() {
+                this.isActive = !this.isActive;
+                this.toggle.classList.toggle('active', this.isActive);
+                this.toggle.classList.add('show');
+                document.querySelectorAll(this.editableSelectors).forEach((el) => {
+                    if (this.isActive) {
+                        el.setAttribute('contenteditable', 'true');
+                    } else {
+                        el.removeAttribute('contenteditable');
+                    }
+                });
+                if (!this.isActive) this.persist();
+            }
+
+            persist() {
+                try {
+                    const snap = document.querySelector('.deck-stage').innerHTML;
+                    localStorage.setItem('tdw-deck-snap-v1', snap);
+                } catch (e) {}
+            }
+
+            restore() {
+                try {
+                    const snap = localStorage.getItem('tdw-deck-snap-v1');
+                    if (snap) document.querySelector('.deck-stage').innerHTML = snap;
+                } catch (e) {}
+            }
+        }
+
+        /* ===========================================
+           EDIT HOTZONE — JS-based hover, 400ms grace
+           =========================================== */
+        function setupEditHotzone(editor) {
+            const hotzone = document.getElementById('editHotzone');
+            const toggle = document.getElementById('editToggle');
+            let hideTimeout = null;
+
+            hotzone.addEventListener('mouseenter', () => {
+                clearTimeout(hideTimeout);
+                toggle.classList.add('show');
+            });
+            hotzone.addEventListener('mouseleave', () => {
+                hideTimeout = setTimeout(() => {
+                    if (!editor.isActive) toggle.classList.remove('show');
+                }, 400);
+            });
+            toggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+            toggle.addEventListener('mouseleave', () => {
+                hideTimeout = setTimeout(() => {
+                    if (!editor.isActive) toggle.classList.remove('show');
+                }, 400);
+            });
+            hotzone.addEventListener('click', () => editor.toggleEditMode());
+        }
+
+        /* === Init === */
+        const deck = new SlidePresentation();
+        const editor = new InlineEditor();
+        setupEditHotzone(editor);
+
+        // Re-bind nav after edit restore (innerHTML wipes listeners on buttons)
+        deck.slides = document.querySelectorAll('.slide');
+        deck.setupButtonNav();
+        deck.showSlide(deck.currentSlide);
+    </script>
+</body>
+</html>
