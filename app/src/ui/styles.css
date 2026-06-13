@@ -153,95 +153,6 @@ body {
   background: var(--warn-soft);
 }
 
-/* ── Library bar (examples + upload) ──────────────────────────────────── */
-
-.tw-libbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 24px;
-  border-bottom: 1px solid var(--rule);
-  background: var(--surface);
-}
-
-.tw-libbar-label {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.tw-libbar-chips {
-  display: flex;
-  gap: 8px;
-  flex: 1;
-  flex-wrap: wrap;
-}
-
-.tw-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--rule);
-  background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--ink);
-  cursor: pointer;
-  transition: border-color 120ms, background 120ms;
-}
-
-.tw-chip:hover {
-  border-color: var(--ink-muted);
-}
-
-.tw-chip[data-active="true"] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.tw-chip-formula {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-muted);
-}
-
-.tw-chip[data-status="warn"] .tw-chip-dot {
-  background: var(--warn);
-}
-
-.tw-chip[data-status="ok"] .tw-chip-dot {
-  background: var(--ok);
-}
-
-.tw-chip-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ink-muted);
-}
-
-.tw-upload {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 15px;
-  border-radius: 999px;
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--surface);
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.tw-upload:hover {
-  background: var(--accent);
-}
-
 /* ── Main ─────────────────────────────────────────────────────────────── */
 
 .tw-main {
@@ -394,15 +305,16 @@ body {
   flex-wrap: wrap;
 }
 
-.tw-export-primary {
+.tw-export.tw-export-primary {
   border-color: var(--ink);
   background: var(--ink);
   color: var(--surface);
 }
 
-.tw-export-primary:hover {
+.tw-export.tw-export-primary:hover {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--surface);
 }
 
 .tw-home-sep {
@@ -769,6 +681,15 @@ body {
 .tw-edit-status .tw-op {
   font-family: var(--font-mono);
   color: var(--accent);
+}
+
+.tw-edit-status .tw-op-src {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.tw-edit-status[data-kind="resolving"] {
+  color: var(--ink-muted);
 }
 
 .tw-edit-status[data-kind="unmapped"] {

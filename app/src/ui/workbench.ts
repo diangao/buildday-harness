@@ -14,7 +14,11 @@
  */
 
 import { mockNodes } from "../harness/mock";
-import { parseEditCommand } from "../harness/edit-intent";
+import {
+  resolveEditCommand,
+  describeOp,
+  type EditSource,
+} from "../harness/edit-resolve";
 import { CHEM_FIXTURES } from "../fixtures/chem";
 import { toBraille } from "../harness/braille";
 import {
@@ -30,12 +34,15 @@ const nodes = mockNodes;
 interface LogEntry {
   utterance: string;
   op: EditOp | null;
+  source: EditSource; // llm = model mapped it; fallback = regex floor; none = no match
+  reason?: string; // human-readable summary (model- or rule-provided)
 }
 
 interface WorkbenchState {
   assets: DiagramAsset[];
   activeId: string | null;
   lastEdit: LogEntry | null;
+  resolving: string | null; // utterance currently being resolved (loading state)
   translatorText: string;
 }
 
@@ -43,17 +50,13 @@ const state: WorkbenchState = {
   assets: [],
   activeId: null,
   lastEdit: null,
+  resolving: null,
   translatorText: "Acetic acid CH3COOH",
 };
-
-const formulaByName = new Map(
-  CHEM_FIXTURES.map((f) => [f.name, f.formula] as const),
-);
 
 export async function mount(root: HTMLElement): Promise<void> {
   root.innerHTML = "";
   root.appendChild(buildHeader());
-  root.appendChild(buildLibBar());
   root.appendChild(buildMain());
   root.appendChild(buildFooter());
 
@@ -69,7 +72,14 @@ export async function mount(root: HTMLElement): Promise<void> {
 
 async function loadExampleAsset(name: string): Promise<DiagramAsset> {
   // parse() resolves a fixture by normalized name, so "Acetic acid" works.
-  const file: UploadedFile = { name, mime: "image/svg+xml", dataUrl: "" };
+  // Carry the fixture's clean skeletal-formula image as the Source depiction —
+  // the original diagram, NOT the generated braille (that's the Tactile pane).
+  const src = CHEM_FIXTURES.find((f) => f.name === name)?.sourceImage;
+  const file: UploadedFile = {
+    name,
+    mime: src?.mime ?? "image/svg+xml",
+    dataUrl: src?.dataUrl ?? "",
+  };
   let asset = await nodes.ingest(file);
   const ir = await nodes.parse(asset);
   asset = { ...asset, goldIR: ir, ir, status: "parsed" };
@@ -320,43 +330,6 @@ function buildHeader(): HTMLElement {
   return header;
 }
 
-// ── Library bar ─────────────────────────────────────────────────────────
-
-function buildLibBar(): HTMLElement {
-  const bar = el("div", "tw-libbar");
-  bar.id = "tw-libbar";
-
-  const label = el("span", "tw-libbar-label");
-  label.textContent = "Examples";
-  bar.appendChild(label);
-
-  const chips = el("div", "tw-libbar-chips");
-  chips.id = "tw-libbar-chips";
-  bar.appendChild(chips);
-
-  bar.appendChild(makeUploadLabel("Upload diagram"));
-  return bar;
-}
-
-function makeUploadLabel(text: string): HTMLLabelElement {
-  const upload = el("label", "tw-upload") as HTMLLabelElement;
-  const inputId = `tw-upload-${Math.random().toString(36).slice(2, 7)}`;
-  upload.setAttribute("for", inputId);
-  upload.innerHTML = `<span>${escapeHtml(text)}</span>`;
-  const input = el("input") as HTMLInputElement;
-  input.type = "file";
-  input.id = inputId;
-  input.accept = "image/*,application/pdf";
-  input.hidden = true;
-  input.addEventListener("change", () => {
-    const file = input.files?.[0];
-    if (file) void handleUpload(file);
-    input.value = "";
-  });
-  upload.appendChild(input);
-  return upload;
-}
-
 function buildDropzone(): HTMLLabelElement {
   const drop = el("label", "tw-dropzone tw-dropzone-compact") as HTMLLabelElement;
   const inputId = `tw-drop-${Math.random().toString(36).slice(2, 7)}`;
@@ -457,16 +430,12 @@ function buildPanes(asset: DiagramAsset): HTMLElement {
 
   const panes = el("div", "tw-panes");
 
-  // Source pane — faithful gold depiction (or uploaded image).
+  // Source pane — the original diagram as supplied (clean skeletal formula for
+  // examples, the uploaded image for uploads). Never the generated braille.
   const source = el("section", "tw-pane");
-  const hasImage =
-    asset.source.dataUrl && asset.source.mime !== "image/svg+xml";
-  const srcBody = hasImage
-    ? `<img src="${asset.source.dataUrl}" alt="uploaded source diagram" />`
-    : `<div class="tw-pane-stage">${sourceSvg(asset) || '<p class="tw-pane-empty">No source depiction.</p>'}</div>`;
   source.innerHTML = `
     <div class="tw-pane-header"><span>Source</span></div>
-    <div class="tw-pane-body">${srcBody}</div>
+    <div class="tw-pane-body">${sourceBody(asset.source)}</div>
   `;
   panes.appendChild(source);
 
@@ -485,13 +454,25 @@ function buildPanes(asset: DiagramAsset): HTMLElement {
   return view;
 }
 
-// Cache the original (gold) render per asset so an edit that changes the tactile
-// output does not also mutate the Source pane — the teacher always compares
-// against the faithful structure.
-const goldSvgCache = new Map<string, string>();
+// Render the Source pane from the asset's own source file. Trusted fixture SVGs
+// are inlined for the same crisp scaling as the Tactile pane; everything else
+// (uploads, which always arrive as base64 from FileReader) renders as a
+// sandboxed <img>, so embedded SVG script can never execute.
+const FIXTURE_SVG_PREFIX = "data:image/svg+xml;utf8,";
 
-function sourceSvg(asset: DiagramAsset): string {
-  return goldSvgCache.get(asset.id) ?? asset.tactile?.svg ?? "";
+function sourceBody(src: UploadedFile): string {
+  if (!src.dataUrl) {
+    return '<div class="tw-pane-stage"><p class="tw-pane-empty">No source depiction.</p></div>';
+  }
+  if (src.dataUrl.startsWith(FIXTURE_SVG_PREFIX)) {
+    try {
+      const svg = decodeURIComponent(src.dataUrl.slice(FIXTURE_SVG_PREFIX.length));
+      return `<div class="tw-pane-stage">${svg}</div>`;
+    } catch {
+      /* malformed encoding — fall through to <img> */
+    }
+  }
+  return `<img src="${escapeHtml(src.dataUrl)}" alt="source diagram" />`;
 }
 
 // ── Footer ──────────────────────────────────────────────────────────────
@@ -562,8 +543,6 @@ async function handleUpload(file: File): Promise<void> {
     tactile: standIn.tactile,
     status: "verified",
   };
-  if (state.assets[idx].tactile)
-    goldSvgCache.set(asset.id, state.assets[idx].tactile!.svg);
   rerender();
 }
 
@@ -572,8 +551,6 @@ function selectByName(name: string): void {
   if (!asset) return;
   state.activeId = asset.id;
   state.lastEdit = null;
-  if (asset.tactile && !goldSvgCache.has(asset.id))
-    goldSvgCache.set(asset.id, asset.tactile.svg);
   rerender();
 }
 
@@ -586,8 +563,16 @@ function goHome(): void {
 async function handleUtterance(utterance: string): Promise<void> {
   const asset = activeAsset();
   if (!asset) return;
-  const op = parseEditCommand(utterance);
-  state.lastEdit = { utterance, op };
+
+  // Real NL understanding: hits the Claude-backed classifier and falls back to
+  // the deterministic regex floor offline. Never throws. We show a loading
+  // state while it resolves, then record where the op came from (llm/fallback).
+  state.resolving = utterance;
+  rerender();
+  const { op, source, reason } = await resolveEditCommand(utterance);
+  state.resolving = null;
+  state.lastEdit = { utterance, op, source, reason };
+
   if (!op) {
     rerender();
     return;
@@ -676,29 +661,8 @@ function activeAsset(): DiagramAsset | null {
 }
 
 function rerender(): void {
-  renderLibBar();
   renderMain();
   renderFooter();
-}
-
-function renderLibBar(): void {
-  const chips = document.getElementById("tw-libbar-chips");
-  if (!chips) return;
-  chips.innerHTML = "";
-  for (const asset of state.assets) {
-    const chip = el("button", "tw-chip");
-    chip.type = "button";
-    chip.setAttribute(
-      "data-active",
-      asset.id === state.activeId ? "true" : "false",
-    );
-    const formula = formulaByName.get(asset.name);
-    chip.innerHTML =
-      `<span class="tw-chip-dot"></span><span>${escapeHtml(asset.name)}</span>` +
-      (formula ? `<span class="tw-chip-formula">${escapeHtml(formula)}</span>` : "");
-    chip.addEventListener("click", () => selectByName(asset.name));
-    chips.appendChild(chip);
-  }
 }
 
 function renderFooter(): void {
@@ -706,19 +670,30 @@ function renderFooter(): void {
   if (footer) footer.style.display = activeAsset() ? "flex" : "none";
   const status = document.getElementById("tw-edit-status");
   if (!status) return;
+
+  if (state.resolving) {
+    status.setAttribute("data-kind", "resolving");
+    status.textContent = `Resolving “${state.resolving}”…`;
+    return;
+  }
   if (!state.lastEdit) {
     status.textContent = "";
     status.removeAttribute("data-kind");
     return;
   }
-  const { utterance, op } = state.lastEdit;
+  const { utterance, op, source, reason } = state.lastEdit;
   if (!op) {
     status.setAttribute("data-kind", "unmapped");
     status.textContent = `Couldn't map "${utterance}" to a safe edit. Try: bigger labels · thicken lines · emphasize double bond · space labels.`;
-  } else {
-    status.removeAttribute("data-kind");
-    status.innerHTML = `<span class="tw-op">${op.kind}</span> applied — “${escapeHtml(utterance)}”`;
+    return;
   }
+  status.removeAttribute("data-kind");
+  const label = reason ?? describeOp(op);
+  const prov =
+    source === "llm" ? "via model" : source === "fallback" ? "offline match" : "";
+  status.innerHTML =
+    `<span class="tw-op">${escapeHtml(label)}</span> applied — “${escapeHtml(utterance)}”` +
+    (prov ? ` <span class="tw-op-src">${escapeHtml(prov)}</span>` : "");
 }
 
 // ── DOM utils ───────────────────────────────────────────────────────────
