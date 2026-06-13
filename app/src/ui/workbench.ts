@@ -87,15 +87,9 @@ async function loadExampleAsset(name: string): Promise<DiagramAsset> {
   return { ...asset, tactile, status: "verified" };
 }
 
-let standInTactilePromise: Promise<DiagramAsset> | null = null;
-function standInAsset(): Promise<DiagramAsset> {
-  // Until the OCR parser lands (a follow-on), an uploaded image gets a
-  // representative compiled structure so the pipeline shape is visible.
-  if (!standInTactilePromise) {
-    standInTactilePromise = loadExampleAsset("Acetic acid");
-  }
-  return standInTactilePromise;
-}
+// Per-asset parse failure message (e.g. unreadable upload, API key not set).
+// UI-local so contracts stay clean; the asset carries status "error".
+const parseError = new Map<string, string>();
 
 // ── Real-time braille translator ─────────────────────────────────────────
 
@@ -439,14 +433,20 @@ function buildPanes(asset: DiagramAsset): HTMLElement {
   `;
   panes.appendChild(source);
 
-  // Tactile pane — working braille render.
+  // Tactile pane — working braille render, or a readable failure for uploads the
+  // model couldn't parse.
   const tactile = el("section", "tw-pane");
   const svg = asset.tactile?.svg ?? "";
+  let tactileBody: string;
+  if (asset.status === "error") {
+    const msg = parseError.get(asset.id) ?? "Couldn't read this diagram.";
+    tactileBody = `<p class="tw-pane-error">${escapeHtml(msg)}</p>`;
+  } else {
+    tactileBody = `<div class="tw-pane-stage">${svg || '<p class="tw-pane-empty">Reading the structure…</p>'}</div>`;
+  }
   tactile.innerHTML = `
     <div class="tw-pane-header"><span>Tactile-ready braille</span></div>
-    <div class="tw-pane-body">
-      <div class="tw-pane-stage">${svg || '<p class="tw-pane-empty">Compiling…</p>'}</div>
-    </div>
+    <div class="tw-pane-body">${tactileBody}</div>
   `;
   panes.appendChild(tactile);
 
@@ -529,20 +529,36 @@ async function handleUpload(file: File): Promise<void> {
   state.assets = [asset, ...state.assets];
   state.activeId = asset.id;
   state.lastEdit = null;
+  parseError.delete(asset.id);
   rerender();
 
-  // Stand-in compile until the OCR parser lands. Keeps the uploaded image in
-  // Source, fills Tactile with a representative compiled structure.
-  const standIn = await standInAsset();
-  const idx = state.assets.findIndex((a) => a.id === asset.id);
-  if (idx < 0) return;
-  state.assets[idx] = {
-    ...state.assets[idx],
-    goldIR: standIn.goldIR,
-    ir: standIn.ir,
-    tactile: standIn.tactile,
-    status: "verified",
-  };
+  // Live path (no fixtures): the VLM reads the uploaded structure → SMILES →
+  // real ChemIR → braille compile. Fails honestly — an unreadable diagram or a
+  // server with no API key surfaces as an error pane, never a stand-in molecule.
+  try {
+    // Lazy-load the real parse engine (pulls in rdkit WASM) so the homepage —
+    // translator + example cards — never pays for it until someone uploads.
+    const { realParse } = await import("../harness/real-parse");
+    const ir = await realParse(asset);
+    const tactile = await nodes.compile(ir);
+    const idx = state.assets.findIndex((a) => a.id === asset.id);
+    if (idx < 0) return;
+    state.assets[idx] = {
+      ...state.assets[idx],
+      goldIR: ir,
+      ir,
+      tactile,
+      status: "verified",
+    };
+  } catch (err) {
+    const idx = state.assets.findIndex((a) => a.id === asset.id);
+    if (idx < 0) return;
+    parseError.set(
+      asset.id,
+      err instanceof Error ? err.message : "Couldn't read this diagram.",
+    );
+    state.assets[idx] = { ...state.assets[idx], status: "error" };
+  }
   rerender();
 }
 
@@ -666,10 +682,19 @@ function rerender(): void {
 }
 
 function renderFooter(): void {
+  const asset = activeAsset();
+  const canEdit = Boolean(asset?.ir && asset?.tactile && asset.status !== "error");
   const footer = document.getElementById("tw-footer");
-  if (footer) footer.style.display = activeAsset() ? "flex" : "none";
+  // Hide edit/export controls while live upload parsing is pending or has
+  // failed honestly. Otherwise an edit can route back through the fixture parser.
+  if (footer) footer.style.display = canEdit ? "flex" : "none";
   const status = document.getElementById("tw-edit-status");
   if (!status) return;
+  if (!canEdit) {
+    status.textContent = "";
+    status.removeAttribute("data-kind");
+    return;
+  }
 
   if (state.resolving) {
     status.setAttribute("data-kind", "resolving");
@@ -689,8 +714,10 @@ function renderFooter(): void {
   }
   status.removeAttribute("data-kind");
   const label = reason ?? describeOp(op);
+  // "rule match" (not "offline match"): the deterministic regex floor also runs
+  // when the endpoint is reachable but the model declines/errs, not just offline.
   const prov =
-    source === "llm" ? "via model" : source === "fallback" ? "offline match" : "";
+    source === "llm" ? "via model" : source === "fallback" ? "rule match" : "";
   status.innerHTML =
     `<span class="tw-op">${escapeHtml(label)}</span> applied — “${escapeHtml(utterance)}”` +
     (prov ? ` <span class="tw-op-src">${escapeHtml(prov)}</span>` : "");
