@@ -1,16 +1,50 @@
-# Room-Aware Caption (Build Day)
+# Tactile Diagram Workbench (Build Day)
 
-Real-time captions that stay **anchored to whoever is speaking** in a physical
-multi-speaker room — not a flat transcript stream. Mechanism: **camera-anchored
-active-speaker attribution** (vision finds who's talking; ASR supplies the words).
+Teacher-facing workbench for turning STEM diagrams into tactile-ready assets.
+The current app shell is being pivoted from the earlier caption prototype into:
+upload/import -> tactile SVG/PDF preview -> natural-language edits -> export.
 
 ## Run
 ```
 npm install
-npm run dev   # open the printed localhost URL, allow camera + mic
+npm run dev   # open the printed localhost URL
 ```
 
-## Architecture (lanes)
+## Serverless SMILES parser
+
+`/api/extract-smiles` is a Vercel function. It keeps the Anthropic key server-side
+and returns a small parser payload for verifier lanes:
+
+```json
+{
+  "smiles": "c1ccccc1",
+  "confidence": "high",
+  "warnings": []
+}
+```
+
+Inputs:
+- `imageDataUrl` for uploaded source diagrams.
+- `imageBase64` + `mediaType` for preprocessed images.
+- `svgText` for generated tactile SVGs that need structural parsing.
+
+Required env:
+- `ANTHROPIC_API_KEY`
+
+Optional env:
+- `ANTHROPIC_MODEL` (use the Build Day model when available; otherwise the
+  function falls back to a stable Claude model string).
+
+Frontend code should call `src/api/extract-smiles.ts`; do not call Anthropic
+directly from the browser. Keep fixture/gold-SMILES examples as the video-demo
+fallback even when the live proxy is enabled.
+
+## Previous caption prototype
+
+The caption pipeline remains in the repo until the tactile workbench replaces
+the shell. It is no longer the locked project direction.
+
+- `src/api/extract-smiles.ts` — typed frontend wrapper for the serverless parser.
 - `src/types/caption-surface.ts` — **shared contract** (CaptionEvent / SpeakerState / EnvSound). Everyone imports this.
 - `src/pipeline/` — realtime engine (fable, #90/#91): camera → face tracking → active-speaker → ASR → attributed `CaptionEvent`s.
   - `caption-surface-source.ts` — the `Pipeline` (event bus + lifecycle + stage wiring)
