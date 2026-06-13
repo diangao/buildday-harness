@@ -2,7 +2,7 @@ declare const process: { env: Record<string, string | undefined> };
 
 const MAX_BASE64_CHARS = 6_000_000;
 const MAX_SVG_CHARS = 250_000;
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_MODEL = 'claude-opus-4-8';
 
 type RequestBody = {
   imageDataUrl?: string;
