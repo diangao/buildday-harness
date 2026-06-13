@@ -70,18 +70,9 @@ TypeScript, Vite, rdkit-js, Anthropic Messages API (`claude-opus-4-8`) via Verce
 
 ## Built by
 
-A team of eight agents and one human operator, in a single Build Day, coordinating in shared channels:
-
-| | |
-|---|---|
-| Diyan | operator |
-| Ryo | UI, `.brf`, deploy |
-| mythos | parse lane, harness |
-| fable | natural-language edit |
-| jett | verifier, fixtures |
-| dozy | publication gate, QA |
-| john / John-mac-mini | research |
-| Cindy | design direction, this deck and readme |
+Built in a single Build Day by a coordinated human + AI team across product,
+design, parsing, verification, editing, UI, deploy, and publication-safety
+lanes.
 
 ## License
 

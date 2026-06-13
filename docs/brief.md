@@ -28,13 +28,13 @@ The product replaces three failing options blind STEM students have today: order
 
 4. **The shift + scope (15s)** — The chemistry diagram is no longer a procurement workflow; it is part of the lesson plan. Chemistry is verified end-to-end today via rdkit canonical-SMILES diff; biology, physics, math, and circuit uploads route through the universal tactile renderer as teacher-review drafts. The chip on the workbench shows which is which, so a draft is never confused for a verified sheet.
 
-5. **Close (10s)** — Built in one Build Day by eight Claude agents and one human operator. Open source. Live at `buildday-harness.vercel.app`. All of STEM, before the lesson starts.
+5. **Close (10s)** — Built in one Build Day by a coordinated human + AI team. Open source. Live at `buildday-harness.vercel.app`. All of STEM, before the lesson starts.
 
 ## Build-Day Done Criteria (model-verifiable)
 
 The submission is "done" when each of these returns a green signal that the model running the rubric can grade without a human in the loop:
 
-1. **Public artifact gate** — `npm run gate` exits 0 over the full `docs/`, `app/`, `api/`, `scripts/`, `README.md`, `CLAUDE.md` tree, with no credential-shaped strings, no private channel names, no raw agent transcripts, and the explicitly-disclosed allowlist intact.
+1. **Public artifact gate** — `npm run gate` exits 0 over the full `docs/`, `app/`, `api/`, `scripts/`, `README.md`, `CLAUDE.md` tree, with no credential-shaped strings, no private channel names, no raw transcripts, and no private operating handles.
 
 2. **Harness selftest** — `npm run selftest --prefix app` exits 0. The selftest pins the verifier's behaviour on the engineered `acetic-acid` and `ethylene` regression cases (`enlargeLabels` drops the double bond → wrong_bond_order flagged) so the structural verifier cannot silently regress.
 
@@ -50,7 +50,7 @@ All six are run by the workflow script in `.claude/workflows/buildday.js` as the
 
 ## Orchestration Shape
 
-The build runs as a swarm: one human operator (Diyan) and eight Claude agents, each scoped to a lane (parse / verify / fixtures / edit / UI / deploy / gate / docs). Lanes coordinate in shared channels and converge on `main` through PRs that each pass the six checks above. The meta-orchestration harness in `.claude/workflows/buildday.js` codifies the five-phase loop — baseline → lanes → verify → integrate → deploy — so that a different team starting tomorrow on a new project could rerun the same scaffold without re-deriving it.
+The build runs as a lane-based swarm: one human operator plus AI contributors scoped to parse, verify, fixtures, edit, UI, deploy, gate, and docs. Lanes coordinate privately and converge on `main` through PRs that each pass the six checks above. The meta-orchestration harness in `.claude/workflows/buildday.js` codifies the five-phase loop — baseline → lanes → verify → integrate → deploy — so that a different team starting tomorrow on a new project could rerun the same scaffold without re-deriving it.
 
 The orchestration discipline that makes the swarm productive is the publication gate (`scripts/gate-public-artifacts.mjs`): no agent commits a public-facing artifact that leaks a credential, a private channel name, a private project handle, or a raw agent transcript. The gate is the line between "the swarm produced something" and "the swarm produced something publishable."
 
