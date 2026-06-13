@@ -693,8 +693,8 @@
                         <div class="loop-step reveal">
                             <span class="step-num">04 · print</span>
                             <h3>Print on what schools already have.</h3>
-                            <p>A4 print-sheet → any laser + swell-paper heater (PIAF) for the diagram. Labels → <code class="mono">.brf</code> for Index V5 and other standard text embossers. Nothing exotic to buy.</p>
-                            <span class="demo-strip">SVG · swell paper · BRF</span>
+                            <p>A4 print-sheet → laser + swell paper (PIAF) for the raised lines + dots of the diagram. <code class="mono">.brf</code> → standard text embosser (Index V5), but only for the braille labels — text embossers don't put down lines.</p>
+                            <span class="demo-strip">SVG · swell paper · BRF labels</span>
                         </div>
                     </div>
 
@@ -803,7 +803,7 @@
                                 <li>Real BANA six-dot tactile geometry — not a Unicode font</li>
                                 <li>Deterministic verifier on rdkit-js canonical SMILES</li>
                                 <li>Natural-language edit with Claude resolver + regex fallback</li>
-                                <li>A4 print-sheet for swell paper + <code>.brf</code> for standard text embossers — runs on the kit schools already have</li>
+                                <li>A4 print-sheet for swell paper carries the diagram lines + dots · <code>.brf</code> for text embossers carries the labels — both run on what schools already have</li>
                                 <li>Serverless VLM proxy, key locked server-side</li>
                                 <li>Public Vercel URL · QA-able on any device</li>
                             </ul>
@@ -812,9 +812,10 @@
                             <h3>Honest scope</h3>
                             <div class="col-headline">What we are not pretending.</div>
                             <ul>
-                                <li>Pipeline parses chemistry only — other subjects upload as stand-in</li>
-                                <li>NL edit limited to six safe rendering ops, not arbitrary structural change</li>
-                                <li>No physical embosser or swell-paper heater on stage — we ship the file</li>
+                                <li>Chemistry is the only subject translated end-to-end today — biology / physics / math surface as the original image, multi-subject router in flight</li>
+                                <li>NL edit limited to a small structure-safe op set, not arbitrary structural change</li>
+                                <li>No physical embosser or swell-paper heater on stage — we ship the files</li>
+                                <li>Text-only braille embossers don't print the diagram lines, only the labels (the SVG / PDF print sheet does the lines)</li>
                                 <li>The verifier announces its own ignorance instead of guessing</li>
                             </ul>
                         </div>

@@ -8,15 +8,15 @@
 
 ## Natural-language edit through a six-op safe router; the model picks the op, never touches the SVG.
 
-## A4 print-sheet for swell paper + `.brf` for Index V5 — runs on the kit schools already have.
+## A4 SVG / PDF for swell paper (or a tactile-graphics embosser) carries the diagram lines · `.brf` for a text-only braille embosser carries the labels — runs on the kit schools already have.
 
 <!-- HERO: insert tactile output of acetic-acid alongside the preflight-flip moment -->
 
 ---
 
-A chemistry teacher uploads a textbook diagram. The workbench parses it, renders it as a tactile-ready SVG and a `.brf` of the braille labels, and lets the teacher refine the result in plain English. After every edit, a deterministic verifier canonicalises the source structure against the rendered structure and flags the moment they diverge — the case the project exists for is when "make labels bigger" silently drops a `C=O` bond to a single bond, which a sighted teacher cannot see but a blind student would learn from.
+A chemistry teacher uploads a textbook diagram. The workbench parses it, renders an A4 SVG / PDF print sheet that carries the diagram's raised lines and dots together (the form a swell-paper heater or a tactile-graphics embosser actually prints) and a `.brf` that carries the braille text labels for a text-only braille embosser. The teacher refines the result in plain English. After every edit, a deterministic verifier canonicalises the source structure against the rendered structure and flags the moment they diverge — the case the project exists for is when "make labels bigger" silently drops a `C=O` bond to a single bond, which a sighted teacher cannot see but a blind student would learn from.
 
-**Live URL:** *(filled after deploy)*
+**Live URL:** [buildday-harness.vercel.app](https://buildday-harness.vercel.app)
 **Repo:** [github.com/diangao/buildday-harness](https://github.com/diangao/buildday-harness)
 
 ---
@@ -33,7 +33,11 @@ A sighted teacher would not catch the drop. A blind student would learn the wron
 
 ## What's real, what isn't
 
-The parse step handles **chemistry only** — biology, physics, and math uploads round-trip to a stand-in render. Natural-language edit is bounded to **six safe rendering ops** (`enlargeLabels`, `thickenLines`, `emphasizeDoubleBonds`, `spaceLabels`, `removeBackground`, `export`); there is no affordance to rewrite the molecule itself, because that affordance is exactly the failure mode the verifier exists to prevent. There is **no physical embosser or swell-paper heater on stage**, so we ship the files and the pipeline above the files is verified end-to-end. When the verifier doesn't know, it says it doesn't know.
+**Chemistry** is the only subject the workbench translates end-to-end today. The pipeline parses the source image into canonical SMILES, compiles it into a tactile sheet with raised bond lines and braille atom labels, and verifies it against rdkit-js canonicalisation on every edit. Biology, physics, and math uploads currently surface as the original image with no tactile translation — a multi-subject router and per-subject draft lanes are in flight to land them as honest drafts that say so on the chip, not as faked tactile output.
+
+Natural-language edit is bounded to a small set of **structure-safe rendering ops**; there is no affordance to rewrite the molecule itself, because that affordance is exactly the failure mode the verifier exists to prevent.
+
+The diagram's raised lines need a swell-paper heater (the cheap path schools already have) or a tactile-graphics embosser to come out as continuous raised line work — a text-only braille embosser only puts down the `.brf` labels, not the diagram itself. There is **no physical hardware on stage**, so we ship both files. When the verifier doesn't know, it says it doesn't know.
 
 ## Try it
 
@@ -70,7 +74,7 @@ The safety claim, in one line: **the model doesn't get a pencil. It gets a multi
 
 ## Stack
 
-TypeScript, Vite, rdkit-js, Anthropic Messages API (`claude-opus-4-8`) via Vercel serverless functions, A4 print-sheet SVG (swell-paper compatible) and Braille Ready Format on export.
+TypeScript, Vite, rdkit-js, Anthropic Messages API (`claude-opus-4-8`) via Vercel serverless functions, A4 print-sheet SVG for swell paper or a tactile-graphics embosser, and Braille Ready Format for standard text embossers.
 
 ## Built by
 
