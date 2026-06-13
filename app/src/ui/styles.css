@@ -593,6 +593,14 @@ body {
   text-align: center;
 }
 
+.tw-pane-error {
+  color: var(--warn);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  max-width: 340px;
+}
+
 /* ── Footer (interaction) ─────────────────────────────────────────────── */
 
 .tw-footer {
