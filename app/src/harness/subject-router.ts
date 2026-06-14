@@ -1,4 +1,4 @@
-import type { DiagramAsset, DiagramKind, TactileSVG } from "./contracts";
+import type { DiagramAsset, DiagramKind, TactileSVG, UploadedFile } from "./contracts";
 import { toBraille } from "./braille";
 import { brailleLabelSVG, PRINT_BRAILLE_MM } from "./braille-render";
 import {
@@ -107,24 +107,27 @@ export function buildDraftTactile(asset: DiagramAsset, route: RoutedSubject): Ta
     route.kind === "chemistry" ? ("unknown" as const) : route.kind;
   const meta = DRAFT_META;
   const sourceSvg = sourceSvgText(asset);
+  const passthroughSource = sourceSvg
+    ? {
+      ...asset.source,
+      mime: "image/svg+xml",
+      dataUrl: svgToDataUrl(sourceSvg),
+    }
+    : sourceImage(asset);
   const extraction = sourceSvg
     ? svgLabelExtraction(sourceSvg, kind, meta.title)
+    : passthroughSource
+      ? { subject: passthroughSubject(kind), title: meta.title, labels: [] }
     : null;
-  const passthrough = sourceSvg && extraction && extraction.labels.length > 0
+  const passthrough = passthroughSource && extraction
     ? compositeTactileSheet(
-      {
-        ...asset.source,
-        dataUrl: svgToDataUrl(sourceSvg),
-      },
+      passthroughSource,
       extraction,
     )
     : null;
-  const printPassthrough = sourceSvg && extraction && extraction.labels.length > 0
+  const printPassthrough = passthroughSource && extraction
     ? compositeTactileSheet(
-      {
-        ...asset.source,
-        dataUrl: svgToDataUrl(sourceSvg),
-      },
+      passthroughSource,
       extraction,
       { width: 210, height: 297 },
     )
@@ -234,6 +237,12 @@ function sourceSvgText(asset: DiagramAsset): string | null {
   } catch {
     return null;
   }
+}
+
+function sourceImage(asset: DiagramAsset): UploadedFile | null {
+  if (!asset.source.dataUrl) return null;
+  if (!asset.source.mime.toLowerCase().startsWith("image/")) return null;
+  return asset.source;
 }
 
 function readAttr(attrs: string, name: string): number | null {

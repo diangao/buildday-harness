@@ -17,6 +17,21 @@ function asset(name: string, source = "<svg/>"): DiagramAsset {
   };
 }
 
+function imageAsset(name: string): DiagramAsset {
+  return {
+    id: "upload",
+    name,
+    kind: "unknown",
+    createdAt: new Date(0).toISOString(),
+    source: {
+      name,
+      mime: "image/png",
+      dataUrl: "data:image/png;base64,iVBORw0KGgo=",
+    },
+    status: "uploaded",
+  };
+}
+
 describe("routeSubject", () => {
   it("does not classify labeled biology diagrams as LED circuits", () => {
     const route = routeSubject(asset("biology-plant-cell-labeled.svg"));
@@ -47,5 +62,36 @@ describe("buildDraftTactile", () => {
     expect(tactile.svg).not.toContain("Circuit tactile draft");
     expect(tactile.printSheet).toContain('width="210mm"');
     expect(tactile.braille.map((label) => label.cells)).toContain("⠝⠥⠉⠇⠑⠥⠎");
+  });
+
+  it("preserves an uploaded SVG even when no text labels are extractable", () => {
+    const source = `
+      <svg viewBox="0 0 200 120">
+        <path d="M20 60 C40 10 160 10 180 60 C160 110 40 110 20 60Z" />
+        <text>nucleus without coordinates</text>
+      </svg>
+    `;
+    const upload = asset("biology-plant-cell-structure.svg", source);
+    const route = routeSubject(upload);
+    const tactile = buildDraftTactile(upload, route);
+
+    expect(tactile.draftKind).toBe("biology");
+    expect(tactile.svg).toContain("<image ");
+    expect(tactile.svg).toContain("nucleus%20without%20coordinates");
+    expect(tactile.svg).not.toContain("major lines");
+    expect(tactile.printSheet).toContain("<image ");
+    expect(tactile.printSheet).toContain('width="210mm"');
+  });
+
+  it("wraps raster image uploads in the tactile SVG instead of the placeholder", () => {
+    const upload = imageAsset("biology-plant-cell-structure.png");
+    const route = routeSubject(upload);
+    const tactile = buildDraftTactile(upload, route);
+
+    expect(tactile.draftKind).toBe("biology");
+    expect(tactile.svg).toContain('<image href="data:image/png;base64,iVBORw0KGgo="');
+    expect(tactile.svg).not.toContain("major lines");
+    expect(tactile.printSheet).toContain('<image href="data:image/png;base64,iVBORw0KGgo="');
+    expect(tactile.printSheet).toContain('width="210mm"');
   });
 });
