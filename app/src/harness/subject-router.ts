@@ -3,7 +3,9 @@ import { toBraille } from "./braille";
 import { brailleLabelSVG, PRINT_BRAILLE_MM } from "./braille-render";
 import {
   compositeTactileSheet,
-  type TactileLabel,
+  extractTactileLabels,
+  extractTactileLabelsFromSVG,
+  type ExtractOptions,
   type TactileLabelExtraction,
   type TactileSubject,
 } from "./passthrough";
@@ -13,6 +15,8 @@ export type RoutedSubject = {
   confidence: "high" | "medium" | "low";
   reason: string;
 };
+
+export type DraftTactileOptions = ExtractOptions;
 
 const SUBJECTS: Array<{
   kind: DiagramKind;
@@ -91,29 +95,65 @@ const DRAFT_META: { title: string; features: string[] } = {
   features: ["major lines", "labels", "legend"],
 };
 
-export function buildDraftTactile(asset: DiagramAsset, route: RoutedSubject): TactileSVG {
+export async function buildDraftTactileFromSource(
+  asset: DiagramAsset,
+  route: RoutedSubject,
+  opts: DraftTactileOptions = {},
+): Promise<TactileSVG> {
+  const kind = route.kind === "chemistry" ? ("unknown" as const) : route.kind;
+  const sourceSvg = sourceSvgText(asset);
+  if (sourceSvg) {
+    return buildDraftTactile(asset, route);
+  }
+
+  if (isEmbeddableImage(asset.source)) {
+    try {
+      const extraction = await extractTactileLabels(asset.source, opts);
+      return buildDraftTactile(asset, route, withFallbackTitle(extraction, DRAFT_META.title));
+    } catch {
+      return buildDraftTactile(asset, route, {
+        subject: passthroughSubject(kind),
+        title: DRAFT_META.title,
+        labels: [],
+      });
+    }
+  }
+
+  return buildDraftTactile(asset, route);
+}
+
+export function buildDraftTactile(
+  asset: DiagramAsset,
+  route: RoutedSubject,
+  extractionOverride: TactileLabelExtraction | null = null,
+): TactileSVG {
   const kind =
     route.kind === "chemistry" ? ("unknown" as const) : route.kind;
   const meta = DRAFT_META;
   const sourceSvg = sourceSvgText(asset);
-  const extraction = sourceSvg
-    ? svgLabelExtraction(sourceSvg, kind, meta.title)
-    : null;
-  const passthrough = sourceSvg && extraction
+  const extraction = extractionOverride ?? (sourceSvg
+    ? withFallbackTitle(
+      extractTactileLabelsFromSVG(sourceSvg, passthroughSubject(kind), meta.title),
+      meta.title,
+    )
+    : null);
+  const sourceForComposite = sourceSvg
+    ? {
+      ...asset.source,
+      dataUrl: svgToDataUrl(sourceSvg),
+    }
+    : isEmbeddableImage(asset.source)
+      ? asset.source
+      : null;
+  const passthrough = sourceForComposite && extraction
     ? compositeTactileSheet(
-      {
-        ...asset.source,
-        dataUrl: svgToDataUrl(sourceSvg),
-      },
+      sourceForComposite,
       extraction,
     )
     : null;
-  const printPassthrough = sourceSvg && extraction
+  const printPassthrough = sourceForComposite && extraction
     ? compositeTactileSheet(
-      {
-        ...asset.source,
-        dataUrl: svgToDataUrl(sourceSvg),
-      },
+      sourceForComposite,
       extraction,
       { width: 210, height: 297 },
     )
@@ -151,37 +191,6 @@ function termMatches(normalizedHaystack: string, term: string): boolean {
   return normalizedTerm.length > 0 && normalizedHaystack.includes(` ${normalizedTerm} `);
 }
 
-function svgLabelExtraction(
-  sourceSvg: string,
-  kind: Exclude<DiagramKind, "chemistry">,
-  title: string,
-): TactileLabelExtraction {
-  const viewBox = readViewBox(sourceSvg);
-  const labels: TactileLabel[] = [];
-  sourceSvg.replace(
-    /<text\b([^>]*)>([\s\S]*?)<\/text>/gi,
-    (_match, attrs: string, raw: string) => {
-      const text = raw.replace(/<[^>]+>/g, "").trim();
-      if (!text) return "";
-      const x = readAttr(attrs, "x");
-      const y = readAttr(attrs, "y");
-      if (x === null || y === null) return "";
-      labels.push({
-        text,
-        x: clamp01((x - viewBox.x) / viewBox.width),
-        y: clamp01((y - viewBox.y) / viewBox.height),
-        fontSize: clamp((readAttr(attrs, "font-size") ?? 18) / viewBox.height, 0.01, 0.2),
-      });
-      return "";
-    },
-  );
-  return {
-    subject: passthroughSubject(kind),
-    title,
-    labels,
-  };
-}
-
 function passthroughSubject(kind: Exclude<DiagramKind, "chemistry">): TactileSubject {
   if (kind === "biology") return "biology";
   if (kind === "physics") return "physics";
@@ -190,18 +199,11 @@ function passthroughSubject(kind: Exclude<DiagramKind, "chemistry">): TactileSub
   return "other";
 }
 
-function readViewBox(svg: string): { x: number; y: number; width: number; height: number } {
-  const tag = svg.match(/<svg\b([^>]*)>/i)?.[1] ?? "";
-  const rawViewBox = tag.match(/\bviewBox=["']([^"']+)["']/i)?.[1];
-  if (rawViewBox) {
-    const parts = rawViewBox.trim().split(/[\s,]+/).map(Number);
-    if (parts.length === 4 && parts.every(Number.isFinite) && parts[2] > 0 && parts[3] > 0) {
-      return { x: parts[0], y: parts[1], width: parts[2], height: parts[3] };
-    }
-  }
-  const width = readAttr(tag, "width") ?? 1024;
-  const height = readAttr(tag, "height") ?? 768;
-  return { x: 0, y: 0, width, height };
+function withFallbackTitle(
+  extraction: TactileLabelExtraction,
+  title: string,
+): TactileLabelExtraction {
+  return extraction.title ? extraction : { ...extraction, title };
 }
 
 function svgToDataUrl(svg: string): string {
@@ -225,17 +227,8 @@ function sourceSvgText(asset: DiagramAsset): string | null {
   }
 }
 
-function readAttr(attrs: string, name: string): number | null {
-  const m = attrs.match(new RegExp(`\\b${name}=["']?(-?\\d+(?:\\.\\d+)?)`, "i"));
-  return m ? Number(m[1]) : null;
-}
-
-function clamp01(n: number): number {
-  return clamp(n, 0, 1);
-}
-
-function clamp(n: number, lo: number, hi: number): number {
-  return n < lo ? lo : n > hi ? hi : n;
+function isEmbeddableImage(source: DiagramAsset["source"]): boolean {
+  return source.dataUrl.startsWith("data:image/") && source.mime.startsWith("image/");
 }
 
 function sanitizeSvg(svg: string): string {

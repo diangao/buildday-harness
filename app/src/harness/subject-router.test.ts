@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramAsset } from "./contracts";
-import { buildDraftTactile, routeSubject } from "./subject-router";
+import { buildDraftTactile, buildDraftTactileFromSource, routeSubject } from "./subject-router";
 
 function asset(name: string, source = "<svg/>"): DiagramAsset {
   return {
@@ -30,6 +30,15 @@ function imageAsset(name: string): DiagramAsset {
     },
     status: "uploaded",
   };
+}
+
+function stubFetch(payload: unknown): typeof fetch {
+  return (async () =>
+    ({
+      ok: true,
+      status: 200,
+      json: async () => payload,
+    }) as unknown as Response) as unknown as typeof fetch;
 }
 
 describe("routeSubject", () => {
@@ -95,5 +104,27 @@ describe("buildDraftTactile", () => {
     expect(tactile.svg).not.toContain("major lines");
     expect(tactile.printSheet).toContain("<image ");
     expect(tactile.printSheet).toContain('width="210mm"');
+  });
+
+  it("uses label extraction for raster non-chem uploads instead of the generic placeholder", async () => {
+    const upload = imageAsset("physics-force-diagram.png");
+    const route = routeSubject(upload);
+    const tactile = await buildDraftTactileFromSource(upload, route, {
+      fetchImpl: stubFetch({
+        subject: "physics",
+        title: "Incline forces",
+        labels: [
+          { text: "N", x: 0.42, y: 0.28, fontSize: 0.04 },
+          { text: "mg", x: 0.5, y: 0.64, fontSize: 0.04 },
+        ],
+      }),
+    });
+
+    expect(tactile.draftKind).toBe("physics");
+    expect(tactile.svg).toContain('href="data:image/png;base64,AAAA"');
+    expect(tactile.svg).toContain("Incline forces");
+    expect(tactile.svg).not.toContain("major lines");
+    expect(tactile.braille.map((label) => label.cells)).toContain("⠝");
+    expect(tactile.braille.map((label) => label.cells)).toContain("⠍⠛");
   });
 });

@@ -19,7 +19,7 @@ import {
   describeOp,
   type EditSource,
 } from "../harness/edit-resolve";
-import { buildDraftTactile, routeSubject } from "../harness/subject-router";
+import { buildDraftTactileFromSource, routeSubject } from "../harness/subject-router";
 import { CHEM_FIXTURES } from "../fixtures/chem";
 import { toBraille } from "../harness/braille";
 import {
@@ -772,7 +772,7 @@ async function handleUpload(file: File): Promise<void> {
   rerender();
 
   if (route.kind !== "chemistry") {
-    const tactile = buildDraftTactile(asset, route);
+    const tactile = await buildDraftTactileFromSource(asset, route);
     const idx = state.assets.findIndex((a) => a.id === asset.id);
     if (idx < 0) return;
     state.assets[idx] = {
