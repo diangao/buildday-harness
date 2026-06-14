@@ -10,19 +10,16 @@ import {
 
 export type RoutedSubject = {
   kind: DiagramKind;
-  label: string;
   confidence: "high" | "medium" | "low";
   reason: string;
 };
 
 const SUBJECTS: Array<{
   kind: DiagramKind;
-  label: string;
   terms: string[];
 }> = [
   {
     kind: "chemistry",
-    label: "Chemistry molecule",
     terms: [
       "chemistry",
       "molecule",
@@ -43,32 +40,26 @@ const SUBJECTS: Array<{
   },
   {
     kind: "circuit",
-    label: "Circuit",
     terms: ["circuit", "resistor", "battery", "led", "bulb", "switch", "parallel", "series"],
   },
   {
     kind: "biology",
-    label: "Biology diagram",
     terms: ["biology", "cell", "neuron", "synapse", "mitosis", "membrane", "nucleus", "plant"],
   },
   {
     kind: "map",
-    label: "Map / geography",
     terms: ["geography", "map", "river", "delta", "water-cycle", "water cycle", "route", "boundary"],
   },
   {
     kind: "physics",
-    label: "Physics force diagram",
     terms: ["physics", "force", "incline", "inclined", "slope", "theta", "friction", "free-body"],
   },
   {
     kind: "graph",
-    label: "Math graph",
     terms: ["math", "graph", "quadratic", "parabola", "function", "axis", "unit-circle", "unit circle"],
   },
   {
     kind: "geometry",
-    label: "Geometry",
     terms: ["geometry", "triangle", "circle", "tangent", "radius", "angle", "pythagorean"],
   },
 ];
@@ -83,7 +74,6 @@ export function routeSubject(asset: DiagramAsset): RoutedSubject {
     if (matched) {
       return {
         kind: subject.kind,
-        label: subject.label,
         confidence: subject.kind === "chemistry" ? "high" : "medium",
         reason: `matched "${matched}" in the file name`,
       };
@@ -91,7 +81,6 @@ export function routeSubject(asset: DiagramAsset): RoutedSubject {
   }
   return {
     kind: "unknown",
-    label: "Tactile diagram",
     confidence: "low",
     reason: "no subject keyword matched",
   };
@@ -110,7 +99,7 @@ export function buildDraftTactile(asset: DiagramAsset, route: RoutedSubject): Ta
   const extraction = sourceSvg
     ? svgLabelExtraction(sourceSvg, kind, meta.title)
     : null;
-  const passthrough = sourceSvg && extraction && extraction.labels.length > 0
+  const passthrough = sourceSvg && extraction
     ? compositeTactileSheet(
       {
         ...asset.source,
@@ -119,7 +108,7 @@ export function buildDraftTactile(asset: DiagramAsset, route: RoutedSubject): Ta
       extraction,
     )
     : null;
-  const printPassthrough = sourceSvg && extraction && extraction.labels.length > 0
+  const printPassthrough = sourceSvg && extraction
     ? compositeTactileSheet(
       {
         ...asset.source,
@@ -129,8 +118,8 @@ export function buildDraftTactile(asset: DiagramAsset, route: RoutedSubject): Ta
       { width: 210, height: 297 },
     )
     : null;
-  const svg = passthrough ?? draftSvg(meta.title, route.label, meta.features, false);
-  const printSheet = printPassthrough ?? draftSvg(meta.title, route.label, meta.features, true);
+  const svg = passthrough ?? draftSvg(meta.title, meta.features, false);
+  const printSheet = printPassthrough ?? draftSvg(meta.title, meta.features, true);
   const braille = extraction?.labels.length
     ? extraction.labels.map((label, idx) => ({
       atomIdx: idx,
@@ -261,7 +250,6 @@ function sanitizeSvg(svg: string): string {
 
 function draftSvg(
   title: string,
-  label: string,
   features: string[],
   printSheet: boolean,
 ): string {
@@ -301,9 +289,9 @@ function draftSvg(
       </g>`;
   const titleText = printSheet
     ? `<text x="18" y="22" font-size="5" font-family="monospace" font-weight="700" fill="#000">${escapeXml(title)}</text>
-       <text x="18" y="31" font-size="3.2" font-family="monospace" fill="#555">${escapeXml(label)} · teacher review draft</text>`
+       <text x="18" y="31" font-size="3.2" font-family="monospace" fill="#555">teacher review draft</text>`
     : `<text x="26" y="34" font-size="20" font-family="system-ui, sans-serif" font-weight="700" fill="#000">${escapeXml(title)}</text>
-       <text x="26" y="58" font-size="13" font-family="system-ui, sans-serif" fill="#555">${escapeXml(label)} · teacher review draft</text>`;
+       <text x="26" y="58" font-size="13" font-family="system-ui, sans-serif" fill="#555">teacher review draft</text>`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}${printSheet ? "mm" : ""}" height="${height}${printSheet ? "mm" : ""}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeXml(title)}">` +
     `<rect width="${width}" height="${height}" fill="#fff"/>${titleText}${body}${key}</svg>`

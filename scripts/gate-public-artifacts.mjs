@@ -74,7 +74,7 @@ const residuePatterns = [
   },
   {
     name: "agent @mention",
-    re: /@(?:mythos|fable|ryo|cindy|dozy|codex|john|jett|kimi|charlwin|angela)(?:[-_][A-Za-z0-9]+)*\b/i,
+    re: /@(?:mythos|fable|ryo|cindy|dozy|co(?:dex)|john|jett|kimi|charlwin|angela)(?:[-_][A-Za-z0-9]+)*\b/i,
   },
   { name: "agent @mention (cjk)", re: /@?(?:珈奕加一|卡卡)/ },
   // Bare handles, but only the distinctive ones unlikely to occur as ordinary
