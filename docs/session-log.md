@@ -26,7 +26,7 @@ The lanes:
 
 ### Phase 1 — Baseline & direction
 
-The repository started with the harness scaffold (`docs/brief.md` placeholder, mock `app/`, gate, publication discipline) and a still-pending project direction. The operator picked the Tactile Diagram Workbench direction at the start of Build Day. The design-direction lane locked the direction into `docs/brief.md` with the project description, user / audience, one-minute demo shape, and the build-day done criteria a model can grade without a human (six verifiable checks).
+The repository started with the harness scaffold (`docs/brief.md` placeholder, mock `app/`, gate, publication discipline) and a still-pending project direction. The operator picked the Tactile Diagram Workbench direction at the start of Build Day. The design-direction lane locked the direction into `docs/brief.md` with the project description, user / audience, hardware assumptions, and the build-day done criteria a model can grade without a human (six verifiable checks).
 
 ### Phase 2 — Parallel lane fan-out
 

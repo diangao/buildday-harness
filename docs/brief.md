@@ -18,18 +18,6 @@ The product replaces three failing options blind STEM students have today: order
 
 **Hardware assumption:** the workbench produces outputs that print on the kit schools already have. The two paths covered today are (1) any black-toner laser or inkjet printer + a ~$1.5k swell-paper heater (PIAF / Zychem ZY-FUSE) for the raised lines and dots of the diagram, and (2) a standard text-only braille embosser (Index Basic-D / Everest V5) for the `.brf` labels. ViewPlus Tiger graphics embossers are supported as a third path but not assumed. The workbench does not require a tactile-graphics embosser to be useful.
 
-## One-Minute Demo Shape
-
-1. **Hook (5s)** — Open with the project name and the audience: open-source braille compiler for blind STEM students.
-
-2. **The current state (15s)** — Today a blind student gets a tactile chemistry diagram three weeks after their class did, if at all. The workbench replaces the three-week procurement workflow with one upload — photo, hand-draw, or type "draw acetone".
-
-3. **Live demo (15s)** — Drive the live URL on a phone or laptop. Upload a chemistry diagram (fixture-safe: acetic acid). Show the tactile sheet preview. Run one natural-language edit ("make labels bigger"). Show the `.brf` and SVG export. If the live upload path fails for any reason, fall back to the fixture-loaded acetic-acid path so the surface is always populated.
-
-4. **The shift + scope (15s)** — The chemistry diagram is no longer a procurement workflow; it is part of the lesson plan. Chemistry is verified end-to-end today via rdkit canonical-SMILES diff; biology, physics, math, and circuit uploads route through the universal tactile renderer as teacher-review drafts. The chip on the workbench shows which is which, so a draft is never confused for a verified sheet.
-
-5. **Close (10s)** — Built in one Build Day by a coordinated human + AI team. Open source. Live at `buildday-harness.vercel.app`. All of STEM, before the lesson starts.
-
 ## Build-Day Done Criteria (model-verifiable)
 
 The submission is "done" when each of these returns a green signal that the model running the rubric can grade without a human in the loop:
