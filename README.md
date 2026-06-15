@@ -9,7 +9,7 @@ STEM diagrams, compiled into raised lines and braille that any embosser can prin
 ---
 
 <p align="center">
-  <img src="docs/images/build-day.png" alt="Claude Build Day · June 13 · San Francisco" width="600">
+  <img src="docs/images/build-day.png" alt="Claude Build Day · June 13 · San Francisco" width="420">
 </p>
 
 <p align="center"><em>Built at Anthropic's Claude Build Day · June 13, 2026 · San Francisco</em></p>
