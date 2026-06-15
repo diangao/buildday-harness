@@ -97,9 +97,11 @@ Key code:
 
 ## Demo
 
-60-second walkthrough — the live workbench, the verifier catching a chemistry edit, the `.brf` export.
+Animated walkthrough — live braille translation, the acetic-acid tactile sheet,
+the verifier catching a structural drift after a label edit, and `.brf` / SVG /
+PDF export controls.
 
-https://github.com/user-attachments/assets/74a34a8e-6748-4155-9bac-dbeecb97f1ac
+![Tactiles walkthrough: verified acetic acid fixture, verifier flag after a label edit, and export modal.](docs/media/tactiles-demo.gif)
 
 ## Run Locally
 
