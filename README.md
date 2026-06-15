@@ -10,10 +10,10 @@ biology / physics / math come out as teacher-review drafts. Seconds, not weeks.
 ---
 
 <p align="center">
-  <img src="docs/images/build-day.png" alt="Claude Build Day · June 13 · San Francisco" width="640">
+  <img src="docs/images/build-day.png" alt="Claude Build Day · June 13 · San Francisco" width="600">
 </p>
 
-Built at Anthropic Build Day, San Francisco, June 13 2026.
+<p align="center"><em>Built at Anthropic's Claude Build Day · June 13, 2026 · San Francisco</em></p>
 
 ---
 
@@ -95,6 +95,12 @@ Key code:
 - `api/edit-intent.ts` — natural-language edit resolver
 - `app/src/harness/smiles-to-ir.ts` — rdkit-js structure compiler
 - `app/src/harness/mock.ts` — tactile rendering and export harness
+
+## Demo
+
+60-second walkthrough — the live workbench, the verifier catching a chemistry edit, the `.brf` export.
+
+*(video pending GitHub upload via user-attachments URL)*
 
 ## Run Locally
 

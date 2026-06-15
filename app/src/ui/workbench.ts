@@ -365,7 +365,7 @@ function buildHeader(): HTMLElement {
   const title = el("button", "tw-title") as HTMLButtonElement;
   title.type = "button";
   title.innerHTML =
-    `<strong>Tactile Workbench</strong>&nbsp;` +
+    `<strong>Tactiles</strong>&nbsp;` +
     `<span>open-source braille compiler for blind STEM students</span>`;
   title.addEventListener("click", goHome);
   header.appendChild(title);
