@@ -13,10 +13,6 @@ biology / physics / math come out as teacher-review drafts. Seconds, not weeks.
   <img src="docs/images/build-day.png" alt="Claude Build Day · June 13 · San Francisco" width="640">
 </p>
 
-<p align="center">
-  <video src="docs/build-day-demo.mp4" controls muted loop playsinline width="640"></video>
-</p>
-
 Built at Anthropic Build Day, San Francisco, June 13 2026.
 
 ---
