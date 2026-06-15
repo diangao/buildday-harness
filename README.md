@@ -100,7 +100,7 @@ Key code:
 
 60-second walkthrough — the live workbench, the verifier catching a chemistry edit, the `.brf` export.
 
-*(video pending GitHub upload via user-attachments URL)*
+https://github.com/user-attachments/assets/74a34a8e-6748-4155-9bac-dbeecb97f1ac
 
 ## Run Locally
 
